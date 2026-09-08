@@ -1,0 +1,22 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+
+	// 必须与 Cloudflare 上已有的 Worker 同名，
+	// 否则自定义域名 sakuramu.edu.kg 的绑定不会保留。
+	"name": "restless-mountain-3c35",
+	"compatibility_date": "2026-09-08",
+
+	// 纯静态站：只需要指向资源目录，不需要 Worker 脚本（无 main 字段）。
+	// 静态资源请求不计入 Worker 调用次数。
+	"assets": {
+		"directory": "./public",
+
+		// "none" = 未命中的路径返回空 404，与迁移前的行为一致。
+		// 想要自定义 404 页面，改成 "404-page" 并添加 public/404.html。
+		"not_found_handling": "none"
+	},
+
+	"observability": {
+		"enabled": true
+	}
+}

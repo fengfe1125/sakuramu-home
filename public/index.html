@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>沐枫 | 个人主页</title>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ==================== */
+        /* CSS 样式区       */
+        /* ==================== */
+
+        /* 1. 全局设置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #050505; /* 背景颜色：极深的黑色 */
+            color: #e0e0e0;            /* 文字颜色：灰白色 */
+            font-family: 'JetBrains Mono', monospace; /* 使用编程字体 */
+            height: 100vh;             /* 高度占满整个屏幕 */
+            overflow: hidden;          /* 防止出现滚动条 */
+            display: flex;
+            justify-content: center;   /* 水平居中 */
+            align-items: center;       /* 垂直居中 */
+            position: relative;
+        }
+
+        /* 2. 背景网格特效 (模仿参考图的科技感背景) */
+        .background-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* 绘制淡淡的网格线 */
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px; /* 网格大小 */
+            z-index: -1; /* 放在内容后面 */
+        }
+
+        /* 星空点缀 (可选) */
+        .stars {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            box-shadow: 10vw 20vh white, 30vw 80vh white, 80vw 10vh white, 60vw 60vh white;
+            opacity: 0.3;
+            z-index: -1;
+        }
+
+        /* 3. 主容器 (页面中间的内容框) */
+        .container {
+            width: 90%;
+            max-width: 800px; /* 最大宽度 */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end; /* 让内容靠右对齐，模仿原图风格 */
+            text-align: right;     /* 文字靠右 */
+            padding-right: 5%;     /* 右侧留一点空隙 */
+        }
+
+        /* 4. 终端提示行样式 (user@host) */
+        .terminal-header {
+            font-size: 0.9rem;
+            color: #6c757d; /* 灰色 */
+            margin-bottom: 20px;
+        }
+        .terminal-user { color: #4facfe; } /* 蓝色用户名 */
+        .terminal-host { color: #00f2fe; } /* 青色主机名 */
+
+        /* 5. 名字标题 */
+        h1 {
+            font-size: 3.5rem; /* 大字体 */
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: -2px;
+            background: linear-gradient(to right, #fff, #aaa); /* 文字渐变 */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* 6. 职业/角色标签 [  ] */
+        .tags {
+            font-size: 1rem;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        /* 7. 引言/座右铭 */
+        .quote {
+            font-size: 1.1rem;
+            color: #ccc;
+            border-left: 3px solid #333; /* 左侧竖线 */
+            padding-left: 15px;
+            margin-bottom: 40px;
+            max-width: 500px;
+            line-height: 1.6;
+            /* 想要靠右对齐引用块，需要特殊处理 border */
+            border-left: none;
+            border-right: 3px solid #333;
+            padding-left: 0;
+            padding-right: 15px;
+        }
+
+        /* 8. 社交图标栏 */
+        .social-links {
+            display: flex;
+            gap: 15px; /* 图标之间的间距 */
+            margin-bottom: 30px;
+            justify-content: flex-end; /* 靠右排列 */
+        }
+
+        .social-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%; /* 圆形 */
+            background: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            text-decoration: none;
+            transition: all 0.3s ease; /* 动画过渡 */
+            border: 1px solid #333;
+        }
+
+        .social-btn:hover {
+            background: #fff;
+            color: #000;
+            transform: translateY(-3px); /* 鼠标悬停时上浮 */
+        }
+
+        /* 9. 链接按钮组 (About, Friends, Contact) */
+        .nav-buttons {
+            display: flex;
+            flex-direction: column; /* 竖着排列 */
+            gap: 10px;
+            align-items: flex-end; /* 靠右对齐 */
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 30px; /* 胶囊形状 */
+            font-size: 0.9rem;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px; /* 文字和箭头之间的距离 */
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            padding-right: 25px; /* 悬停时稍微变长一点的特效 */
+        }
+
+        .btn-primary {
+            background: #fff;
+            color: #000;
+            font-weight: bold;
+        }
+        .btn-primary:hover {
+            background: #ddd;
+        }
+
+        /* 手机端适配：屏幕变小时，字体改小，布局调整 */
+        @media (max-width: 600px) {
+            h1 { font-size: 2.5rem; }
+            .container { align-items: center; text-align: center; padding-right: 0; }
+            .quote { border-right: none; padding-right: 0; border-top: 2px solid #333; padding-top: 15px; }
+            .social-links { justify-content: center; }
+            .nav-buttons { align-items: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background-grid"></div>
+    <div class="stars"></div>
+
+    <div class="container">
+        
+        <div class="terminal-header">
+            <span class="terminal-user">su</span>@<span class="terminal-host">sakuramu.edu.kg</span>
+        </div>
+
+        <h1>沐枫</h1>
+
+        <div class="tags">
+            [ 新手开发者 | 求知 | 探索 ]
+        </div>
+
+        <div class="quote">
+            “Dare to think.”
+            <br><br>
+            // 正在学习 Python 与 Web 开发...
+        </div>
+
+        <div class="social-links">
+            <a href="https://github.com/fengfe1125" class="social-btn" title="GitHub"><i class="fab fa-github"></i></a>
+            <a href="https://x.com/Answerudp" class="social-btn" title="Twitter"><i class="fab fa-twitter"></i></a>
+            <a href="https://t.me/+u6L-BJNTza4xYThl" class="social-btn" title="Telegram"><i class="fab fa-telegram"></i></a>
+            <a href="https://space.bilibili.com/329868551" class="social-btn" title="Bilibili"><i class="fab fa-bilibili"></i></a>
+        </div>
+
+        <div class="nav-buttons">
+            <a href="#" class="btn">关于我 (About) <i class="fas fa-arrow-right"></i></a>
+            <a href="#" class="btn">我的作品 (Works) <i class="fas fa-arrow-right"></i></a>
+            <a href="#" class="btn">朋友们 (Friends) <i class="fas fa-arrow-right"></i></a>
+            
+            <a href="mailto:su@sakuramu.edu.kg" class="btn btn-primary">
+                <i class="fas fa-envelope"></i> 联系我 (su@sakuramu.edu.kg)
+            </a>
+        </div>
+
+    </div>
+
+</body>
+</html>
