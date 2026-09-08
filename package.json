@@ -1,0 +1,12 @@
+{
+  "name": "sakuramu-home",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "versions": "wrangler versions list"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}
