@@ -71,9 +71,10 @@ body {
 .t-ava   { grid-column:span 2; }
 .t-id    { grid-column:span 6; }
 .t-stats { grid-column:span 4; }
+.t-anim  { grid-column:span 2; }
 .t-quote { grid-column:span 4; }
-.t-lang  { grid-column:span 4; }
-.t-mon   { grid-column:span 4; }
+.t-lang  { grid-column:span 3; }
+.t-mon   { grid-column:span 3; }
 .t-work  { grid-column:span 4; }
 .t-link  { grid-column:span 3; }
 .t-colo  { grid-column:span 6; }
@@ -84,7 +85,8 @@ body {
     .t-meta,.t-head,.t-contact,.t-stats,.t-colo { grid-column:span 6; }
     .t-ava { grid-column:span 2; }
     .t-id  { grid-column:span 4; }
-    .t-quote { grid-column:span 6; }
+    .t-anim { grid-column:span 2; }
+    .t-quote { grid-column:span 4; }
     .t-lang,.t-mon,.t-work,.t-link,.t-soon { grid-column:span 3; }
 }
 @media (max-width:600px) {
@@ -120,6 +122,15 @@ body {
     border:1px solid var(--accent); pointer-events:none; z-index:1; }
 .t-ava::before { top:8px; left:8px; border-width:1px 0 0 1px; }
 .t-ava::after { bottom:8px; right:8px; border-width:0 1px 1px 0; }
+
+/* ═════ 5b. 动效砖：四维超立方体线框 ═════ */
+.t-anim { position:relative; overflow:hidden; min-height:150px; }
+.t-anim canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
+/* 与头像呼应的角标 */
+.t-anim::before,.t-anim::after { content:''; position:absolute; width:12px; height:12px;
+    border:1px solid var(--rule-strong); pointer-events:none; z-index:1; }
+.t-anim::before { top:8px; left:8px; border-width:1px 0 0 1px; }
+.t-anim::after { bottom:8px; right:8px; border-width:0 1px 1px 0; }
 
 /* ═════ 6. 身份砖 ═════ */
 .t-id { display:flex; flex-direction:column; justify-content:center; }
@@ -293,6 +304,8 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
         <div class="stat"><b data-count="3">0</b><span>Stars</span></div>
         <div class="stat"><b data-count="2023">0</b><span>Since</span></div>
     </div>
+
+    <div class="t-anim"><canvas id="fx" aria-hidden="true"></canvas></div>
 
     <div class="t-quote pad">
         <div class="eyebrow">新手开发者 · 求知 · 探索</div>
@@ -652,6 +665,104 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
                 merge(live);
             }).catch(function () {});
     }
+})();
+</script>
+
+<script>
+/* 四维超立方体（tesseract）线框投影
+   16 个顶点取遍 (±1,±1,±1,±1)，两顶点只差一个坐标符号时相连，共 32 条棱。
+   先在 XW / YZ / XY 三个平面上做 4D 旋转，再 4D→3D→2D 两次透视投影，
+   按投影深度调节每条棱的透明度，产生"由内向外翻出来"的错觉。 */
+(function () {
+    'use strict';
+    var cv = document.getElementById('fx');
+    if (!cv || !cv.getContext) return;
+    var ctx = cv.getContext('2d'), tile = cv.parentElement;
+    var still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var V = [], i;
+    for (i = 0; i < 16; i++) V.push([(i&1)?1:-1, (i&2)?1:-1, (i&4)?1:-1, (i&8)?1:-1]);
+    var E = [];
+    for (var a = 0; a < 16; a++) for (var b = a + 1; b < 16; b++) {
+        var d = a ^ b;
+        if (d && (d & (d - 1)) === 0) E.push([a, b]);   // 异或结果是 2 的幂 = 只差一位
+    }
+
+    // 跟随主题取色
+    var rgb = [178, 78, 51];
+    function readColor() {
+        var h = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim().replace('#', '');
+        if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+        var n = parseInt(h, 16);
+        if (!isNaN(n)) rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    }
+    readColor();
+    var mq = matchMedia('(prefers-color-scheme: dark)');
+    if (mq.addEventListener) mq.addEventListener('change', readColor);
+    else if (mq.addListener) mq.addListener(readColor);
+
+    var W = 1, H = 1;
+    function resize() {
+        var dpr = Math.min(window.devicePixelRatio || 1, 2), r = tile.getBoundingClientRect();
+        W = Math.max(r.width, 1); H = Math.max(r.height, 1);
+        cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+    if ('ResizeObserver' in window) new ResizeObserver(resize).observe(tile);
+    else addEventListener('resize', resize);
+
+    function spin(p, i, j, ang) {
+        var c = Math.cos(ang), s = Math.sin(ang), x = p[i], y = p[j];
+        p[i] = x * c - y * s; p[j] = x * s + y * c;
+    }
+
+    function draw(t) {
+        ctx.clearRect(0, 0, W, H);
+        var S = Math.min(W, H) * 0.75, cx = W / 2, cy = H / 2;
+        // 0.75 由完整旋转周期扫描得出：归一化最大半径 0.5726，
+        // 0.75 × 0.5726 × 2 ≈ 86% 边长，两侧各留 7% 余量不会裁切
+        var pts = V.map(function (v) {
+            var p = v.slice();
+            spin(p, 0, 3, t * 0.00045);   // XW
+            spin(p, 1, 2, t * 0.00033);   // YZ
+            spin(p, 0, 1, t * 0.00018);   // XY
+            var k  = 1 / (2.6 - p[3]);                       // 4D → 3D
+            var k2 = 1 / (2.4 - p[2] * k);                   // 3D → 2D
+            return { x: cx + p[0] * k * k2 * S, y: cy + p[1] * k * k2 * S, d: k * k2 };
+        });
+
+        ctx.lineWidth = 1;
+        E.forEach(function (e) {
+            var A = pts[e[0]], B = pts[e[1]];
+            var al = Math.max(0.08, Math.min(0.9, ((A.d + B.d) / 2 - 0.05) * 1.35));
+            ctx.strokeStyle = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + al.toFixed(3) + ')';
+            ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+        });
+        pts.forEach(function (p) {
+            var al = Math.max(0.15, Math.min(1, (p.d - 0.05) * 1.6));
+            ctx.fillStyle = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + al.toFixed(3) + ')';
+            ctx.fillRect(p.x - 1.3, p.y - 1.3, 2.6, 2.6);
+        });
+    }
+
+    // 开了"减少动态效果"就只画一帧静态图
+    if (still) { draw(0); return; }
+
+    var raf = null, onScreen = true, t0 = performance.now();
+    function loop(now) { draw(now - t0); raf = requestAnimationFrame(loop); }
+    function play() { if (!raf && onScreen && !document.hidden) raf = requestAnimationFrame(loop); }
+    function stop() { if (raf) { cancelAnimationFrame(raf); raf = null; } }
+
+    // 滚出视口或切到后台就停，不空转耗电
+    if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (es) {
+            onScreen = es[0].isIntersecting;
+            onScreen ? play() : stop();
+        }, { threshold: 0 }).observe(tile);
+    }
+    document.addEventListener('visibilitychange', function () { document.hidden ? stop() : play(); });
+    play();
 })();
 </script>
 </body>
