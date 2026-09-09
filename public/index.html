@@ -79,6 +79,10 @@ body {
 .t-link  { grid-column:span 3; }
 .t-colo  { grid-column:span 6; }
 .t-soon  { grid-column:span 3; }
+.t-tkstat  { grid-column:span 4; }
+.t-tkmap   { grid-column:span 8; }
+.t-tkagent { grid-column:span 4; }
+.t-tknote  { grid-column:span 8; }
 
 @media (max-width:1000px) {
     .tiles { grid-template-columns:repeat(6,1fr); }
@@ -88,6 +92,7 @@ body {
     .t-anim { grid-column:span 2; }
     .t-quote { grid-column:span 4; }
     .t-lang,.t-mon,.t-work,.t-link,.t-soon { grid-column:span 3; }
+    .t-tkstat,.t-tkmap,.t-tkagent,.t-tknote { grid-column:span 6; }
 }
 @media (max-width:600px) {
     .tiles { grid-template-columns:1fr; }
@@ -197,6 +202,55 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
 .mlabel { display:flex; justify-content:space-between; margin-top:9px;
     font-family:'JetBrains Mono',monospace; font-size:.6rem; color:var(--ink-faint); }
 
+/* ═════ 9b. Token 统计 ═════
+   数字砖沿用 .stat 的砖中砖；热力图沿用 .months 的三级色阶，
+   grid-auto-flow:column + 7 行让按日排列的 DOM 自动成为周列，无需索引运算。 */
+.t-tkstat { display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:var(--rule); }
+.t-tkstat .stat b { font-size:clamp(1.05rem,2vw,1.4rem); }
+/* 断点必须写在基础规则之后：两者同为单类选择器，靠源码顺序决胜负 */
+@media (max-width:1000px) { .t-tkstat { grid-template-columns:repeat(3,1fr); } }
+@media (max-width:600px)  { .t-tkstat { grid-template-columns:repeat(2,1fr); } }
+
+.tkhead { display:flex; align-items:baseline; gap:10px; margin-bottom:13px; }
+.tkhead .vh { margin-bottom:0; }
+.tkviews { margin-left:auto; display:flex; gap:4px; }
+.tkviews button { font-family:'JetBrains Mono',monospace; font-weight:400; font-size:.6rem;
+    padding:3px 6px; background:var(--chip); color:var(--ink-faint); letter-spacing:.03em;
+    border:0; border-bottom:1px solid transparent; cursor:pointer; }
+.tkviews button:hover { color:var(--ink-soft); }
+.tkviews button[aria-selected="true"] { color:var(--accent); border-bottom-color:var(--accent); }
+
+/* 行高、列宽与间隙都由 JS 按可用宽度算出（见 drawMap）：
+   1fr + aspect-ratio 在列数少时会把格子撑到上百像素，必须给确定的像素尺寸；
+   而 53 列在窄屏上光间隙就占掉半个砖，所以塞不下时由 .tkscroll 自己横向滚动，
+   绝不让整页出现横向滚动条。 */
+.tkscroll { overflow-x:auto; overflow-y:hidden; }
+.tkgrid { display:grid; grid-auto-flow:column; gap:3px; }
+.tkgrid i { background:var(--empty); transition:background-color .5s; }
+.tkgrid i.l1 { background:color-mix(in srgb,var(--accent) 32%,transparent); }
+.tkgrid i.l2 { background:color-mix(in srgb,var(--accent) 64%,transparent); }
+.tkgrid i.l3 { background:var(--accent); }
+.tkgrid i.pad { visibility:hidden; }
+.tkmonths { display:grid; gap:3px; margin-top:7px; overflow:hidden;
+    font-family:'JetBrains Mono',monospace; font-size:.58rem; color:var(--ink-faint); }
+.tkmonths span { white-space:nowrap; }
+.tkfoot { display:flex; align-items:center; gap:8px; margin-top:11px;
+    font-family:'JetBrains Mono',monospace; font-size:.6rem; color:var(--ink-faint); }
+.tkscale { display:flex; align-items:center; gap:3px; margin-left:auto; }
+.tkscale i { width:9px; height:9px; background:var(--empty); }
+.tkscale i.l1 { background:color-mix(in srgb,var(--accent) 32%,transparent); }
+.tkscale i.l2 { background:color-mix(in srgb,var(--accent) 64%,transparent); }
+.tkscale i.l3 { background:var(--accent); }
+.tkcap { margin-top:8px; font-family:'JetBrains Mono',monospace; font-size:.58rem;
+    line-height:1.7; color:var(--ink-faint); }
+
+.tkagents { display:flex; flex-direction:column; gap:9px; }
+.tkagent { display:grid; grid-template-columns:1fr auto; gap:3px 8px; align-items:baseline; }
+.tkagent .n { font-family:'JetBrains Mono',monospace; font-size:.66rem; color:var(--ink-soft); }
+.tkagent .v { font-family:'JetBrains Mono',monospace; font-size:.6rem; color:var(--ink-faint);
+    font-variant-numeric:tabular-nums; }
+.tkagent .wbar { grid-column:1 / -1; }
+
 /* ═════ 10. 版块标题条 ═════ */
 .t-head { display:flex; align-items:baseline; gap:11px;
     padding:15px clamp(14px,1.7vw,20px);
@@ -241,10 +295,10 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
     color:var(--ink-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
 /* ═════ 13. 本站 / 待建 / 联系 ═════ */
-.t-colo { font-family:'JetBrains Mono',monospace; font-size:.71rem; line-height:2; }
-.t-colo div { display:flex; gap:12px; }
-.t-colo dt { color:var(--ink-faint); width:48px; flex-shrink:0; }
-.t-colo dd { color:var(--ink-soft); }
+.t-colo,.t-tknote { font-family:'JetBrains Mono',monospace; font-size:.71rem; line-height:2; }
+.t-colo div,.t-tknote div { display:flex; gap:12px; }
+.t-colo dt,.t-tknote dt { color:var(--ink-faint); width:64px; flex-shrink:0; }
+.t-colo dd,.t-tknote dd { color:var(--ink-soft); }
 .t-colo a { color:var(--accent); text-decoration:none; border-bottom:1px solid transparent; }
 .t-colo a:hover { border-bottom-color:var(--accent); }
 
@@ -360,6 +414,34 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
     <div class="t-soon pad reveal">
         <span class="label">朋友们</span><span class="en">Friends</span><span class="tail">敬请期待</span>
     </div>
+
+    <div class="t-head reveal"><b>05</b> / Tokens <span class="zh">用量</span></div>
+
+    <div class="t-tkstat reveal" id="tk-stats"></div>
+
+    <div class="t-tkmap pad reveal">
+        <div class="tkhead">
+            <div class="vh">Token 活动</div>
+            <div class="tkviews" id="tk-views" role="tablist" aria-label="热力图视图">
+                <button type="button" role="tab" data-view="daily" aria-selected="true">每日</button>
+                <button type="button" role="tab" data-view="weekly" aria-selected="false">每周</button>
+                <button type="button" role="tab" data-view="cumul" aria-selected="false">累计</button>
+            </div>
+        </div>
+        <div class="tkscroll" id="tk-scroll">
+            <div class="tkgrid" id="tk-grid" role="img"></div>
+            <div class="tkmonths" id="tk-months" aria-hidden="true"></div>
+        </div>
+        <div class="tkfoot"><span id="tk-range"></span><span class="tkscale" id="tk-scale"></span></div>
+        <div class="tkcap" id="tk-cap"></div>
+    </div>
+
+    <div class="t-tkagent pad reveal">
+        <div class="vh">按 Agent 分布</div>
+        <div class="tkagents" id="tk-agents"></div>
+    </div>
+
+    <dl class="t-tknote pad reveal" id="tk-note"></dl>
 
     <a class="t-contact reveal" href="mailto:su@sakuramu.edu.kg">
         <span class="k">Get in touch</span><span class="v">su@sakuramu.edu.kg</span>
@@ -580,12 +662,13 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
 
     /* ── 动画 ── */
     function countUp(el) {
-        var t = +el.dataset.count;
-        if (still) { el.textContent = t; return; }
+        var t = +el.dataset.count, f = el.dataset.fmt;
+        if (still) { el.textContent = f ? fmtV(t, f) : t; return; }
         var s = performance.now();
         (function tick(n) {
             var p = Math.min((n - s) / 1100, 1);
-            el.textContent = Math.round(t * (1 - Math.pow(1 - p, 3)));
+            var v = t * (1 - Math.pow(1 - p, 3));
+            el.textContent = f ? fmtV(v, f) : Math.round(v);
             if (p < 1) requestAnimationFrame(tick);
         })(s);
     }
@@ -621,6 +704,222 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
         }
         document.querySelectorAll('.reveal:not(.in)').forEach(function (el) { io.observe(el); });
     }
+
+    /* ── Token 用量 ──
+       数据来自本机 TokenTracker 的 export-public 载荷。部署时烧录快照，
+       之后由 tt.sakuramu.edu.kg 覆盖；取不到就用快照，与 PROJECTS 同一套路。 */
+    var TOKENS_SNAPSHOT = {"agents":[{"cost_usd":2209.27,"id":"claude","tokens":3697978156},{"cost_usd":472.77,"id":"codex","tokens":2066476212},{"cost_usd":25.42,"id":"dsh","tokens":301377042},{"cost_usd":110.96,"id":"pi","tokens":262922126},{"cost_usd":22.82,"id":"kimi","tokens":178513403},{"cost_usd":24.73,"id":"hermes","tokens":73724259},{"cost_usd":51.97,"id":"opencode","tokens":65830878}],"app_version":"0.2.6","caveats":{"snapshot_only_agents":["hermes","opencode"],"undated_share":0.0582},"daily":{"start":"2025-09-10","tokens":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,647162,2290399,4648044,60806057,9272741,51913668,97393341,21570395,44262139,445326,48482768,438299707,178954267,178160419,414130057,320778331,206105299,261417613,7542815,1384284,109093761,112487214,277107957,96892292,197745142,54788694,115914246,173092782,79033341,140085696,321835446,173869922,162601836,37367788,341649850,294702880,351616774,206491407,194521892,299508404,171355107],"window_tokens":6260267263},"generated_at":"2026-09-09T09:00:00Z","longest_burst":{"agent":"codex","basis":"exact","day":"2026-09-01","gap_minutes":30,"seconds":21832},"peak":{"day":"2026-08-11","tokens":438299707},"range":{"days":365,"from":"2025-09-10","to":"2026-09-09"},"streak":{"as_of":"2026-09-09","current":41,"longest":41},"totals":{"active_days":41,"cost_usd":2917.95,"cost_usd_undated":96.66,"tokens":6646822076,"tokens_dated":6260267263,"tokens_undated":386554813},"tz":"Asia/Shanghai","tz_offset_minutes":480,"v":1};
+    var TK_KEY = 'tt-v1', TK_TTL = 8 * 3600 * 1000;   // 首页 8 小时刷一次即可
+    var AGENT_NAME = { claude:'Claude Code', codex:'Codex', kimi:'Kimi Code',
+        opencode:'opencode', dsh:'dsh', hermes:'Hermes', pi:'Pi' };
+    var tkData = null, tkView = 'daily';
+
+    /* 与 TokenTrackerCore 的 MenuBarFmt.fmtTokens 逐档对齐（亿档触发点是 1e6，不是 1e8） */
+    function fmtT(n) {
+        n = +n || 0; if (n < 0) n = 0;
+        if (n >= 1e6) return (n / 1e8).toFixed(2) + '亿';
+        if (n >= 1e4) return (n / 1e3).toFixed(1) + 'K';
+        if (n >= 1e3) return (n / 1e3).toFixed(2) + 'K';
+        return String(Math.round(n));
+    }
+    function fmtDur(sec) {
+        sec = +sec || 0;
+        var h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60);
+        if (m === 60) { h += 1; m = 0; }
+        return h ? h + ' 小时 ' + m + ' 分' : m + ' 分';
+    }
+    function fmtV(v, kind) {
+        if (kind === 'tokens') return fmtT(v);
+        if (kind === 'dur') return fmtDur(v);
+        if (kind === 'usd') return '$' + (v >= 1000 ? (v / 1000).toFixed(2) + 'K' : v.toFixed(2));
+        if (kind === 'days') return Math.round(v) + ' 天';
+        return String(Math.round(v));
+    }
+    function pad2(n) { return (n < 10 ? '0' : '') + n; }
+    function dayParts(iso) { var p = iso.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+    function addDays(iso, n) {
+        var d = dayParts(iso); d.setDate(d.getDate() + n);
+        return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+    }
+    function weekdayMon(iso) { return (dayParts(iso).getDay() + 6) % 7; }
+
+    function tkStat(v, fmt, label) {
+        return '<div class="stat"><b data-count="' + v + '" data-fmt="' + fmt + '">0</b>' +
+               '<span>' + esc(label) + '</span></div>';
+    }
+
+    function renderTokens(d) {
+        tkData = d;
+        var t = d.totals, b = d.longest_burst;
+        document.getElementById('tk-stats').innerHTML =
+            tkStat(t.tokens, 'tokens', '累计 Token') +
+            tkStat(d.peak ? d.peak.tokens : 0, 'tokens', '峰值 Token') +
+            tkStat(b ? b.seconds : 0, 'dur', '最长聊天时长') +
+            tkStat(d.streak.current, 'days', '当前连续') +
+            tkStat(d.streak.longest, 'days', '最长连续') +
+            tkStat(t.cost_usd, 'usd', '估算成本');
+
+        var agents = d.agents || [], max = 0, i;
+        for (i = 0; i < agents.length; i++) max = Math.max(max, agents[i].tokens);
+        document.getElementById('tk-agents').innerHTML = agents.map(function (a) {
+            var pct = max ? Math.round(a.tokens / max * 100) : 0;
+            return '<div class="tkagent"><span class="n">' + esc(AGENT_NAME[a.id] || a.id) +
+                '</span><span class="v">' + fmtT(a.tokens) + '</span>' +
+                '<span class="wbar"><i data-w="' + pct + '"></i></span></div>';
+        }).join('') || '<span class="v">暂无数据</span>';
+
+        var share = (t.undated_share !== undefined ? t.undated_share : d.caveats.undated_share);
+        var snap = (d.caveats.snapshot_only_agents || []).map(function (x) {
+            return AGENT_NAME[x] || x; }).join('、');
+        document.getElementById('tk-note').innerHTML = [
+            ['口径', '输入 / 输出 / 缓存读 / 缓存写四项互斥求和，缓存读写计入总量'],
+            ['时区', esc(d.tz) + '，日期在本机时区切分，页面直接渲染已分好的日期'],
+            ['未定位', fmtT(t.tokens_undated) + '（' + (d.caveats.undated_share * 100).toFixed(2) +
+                '%）无法还原到具体某天，计入总量但不进热力图'],
+            ['聊天时长', '空闲超过 ' + (b ? b.gap_minutes : 30) + ' 分钟即切段，取最长一段；' +
+                (snap ? '仅统计有精确时间戳的工具，不含 ' + esc(snap) : '仅统计有精确时间戳的工具')],
+            ['更新', esc(d.generated_at.replace('T', ' ').replace('Z', ' UTC')) +
+                '，由本机 TokenTracker 上报']
+        ].map(function (r) {
+            return '<div><dt>' + r[0] + '</dt><dd>' + r[1] + '</dd></div>'; }).join('');
+
+        drawMap();
+    }
+
+    /* 每日=非零值三分位；每周=整列同色、在周合计上重算分位；
+       累计=占最终总量的比例固定四分带（单调序列上分位数没有意义）。 */
+    function drawMap() {
+        var d = tkData, days = d.daily.tokens, start = d.daily.start, n = days.length;
+        if (!n) return;
+        var lead = weekdayMon(start), trail = (7 - ((lead + n) % 7)) % 7;
+        var cols = (lead + n + trail) / 7, i;
+
+        var vals = [], run = [], acc = 0;
+        for (i = 0; i < n; i++) { acc += days[i]; run.push(acc); if (days[i] > 0) vals.push(days[i]); }
+        vals.sort(function (a, b) { return a - b; });
+
+        var weekly = [];
+        for (i = 0; i < n; i++) { var c = ((lead + i) / 7) | 0; weekly[c] = (weekly[c] || 0) + days[i]; }
+        var wsorted = weekly.filter(function (v) { return v > 0; }).sort(function (a, b) { return a - b; });
+
+        function cut(list, p) {
+            return list.length ? list[Math.min(list.length - 1, Math.floor(p * list.length))] : 0;
+        }
+        var d1 = cut(vals, 1 / 3), d2 = cut(vals, 2 / 3);
+        var w1 = cut(wsorted, 1 / 3), w2 = cut(wsorted, 2 / 3);
+        var total = run[n - 1] || 1;
+
+        function level(idx) {
+            var v;
+            if (tkView === 'daily') {
+                v = days[idx];
+                return v <= 0 ? 0 : v <= d1 ? 1 : v <= d2 ? 2 : 3;
+            }
+            if (tkView === 'weekly') {
+                v = weekly[((lead + idx) / 7) | 0] || 0;
+                return v <= 0 ? 0 : v <= w1 ? 1 : v <= w2 ? 2 : 3;
+            }
+            var r = run[idx] / total;
+            return r < .25 ? 0 : r < .5 ? 1 : r < .75 ? 2 : 3;
+        }
+        function tip(idx) {
+            var day = addDays(start, idx);
+            if (tkView === 'weekly') {
+                return day + ' 所在周 · ' + fmtT(weekly[((lead + idx) / 7) | 0] || 0);
+            }
+            if (tkView === 'cumul') {
+                return '截至 ' + day + ' · 累计 ' + fmtT(run[idx]) +
+                       '（' + Math.round(run[idx] / total * 100) + '%）';
+            }
+            return day + ' · ' + fmtT(days[idx]);
+        }
+
+        var html = '', k;
+        for (k = 0; k < lead; k++) html += '<i class="pad"></i>';
+        for (i = 0; i < n; i++) {
+            var lv = level(i);
+            html += '<i class="' + (lv ? 'l' + lv : '') + '" title="' + esc(tip(i)) + '"></i>';
+        }
+        for (k = 0; k < trail; k++) html += '<i class="pad"></i>';
+        var grid = document.getElementById('tk-grid');
+        var wrap = document.getElementById('tk-scroll');
+        // 先按 3px 间隙试算格子边长；塞不下就收窄间隙。仍低于 7px 说明这个宽度
+        // 根本放不下整年，那就不必再缩 —— 横竖要滚动，不如给个看得清的 11px，
+        // 由 .tkscroll 消化多出来的宽度。窄屏首屏加载与从宽屏缩放的结果因此一致。
+        var avail = wrap.clientWidth || 640, gap = 3;
+        var cell = Math.floor((avail - (cols - 1) * gap) / cols);
+        if (cell < 7) { gap = 2; cell = Math.floor((avail - (cols - 1) * gap) / cols); }
+        if (cell < 7) { gap = 3; cell = 11; }
+        cell = Math.min(14, cell);
+        grid.style.gap = gap + 'px';
+        grid.style.gridTemplateRows = 'repeat(7,' + cell + 'px)';
+        grid.style.gridAutoColumns = cell + 'px';
+        grid.innerHTML = html;
+        grid.setAttribute('aria-label', '从 ' + start + ' 到 ' + d.range.to + ' 的每日 Token 用量，共 ' +
+            n + ' 天，累计 ' + fmtT(d.daily.window_tokens));
+
+        var months = document.getElementById('tk-months'), mh = '', last = '';
+        months.style.gap = gap + 'px';
+        months.style.gridTemplateColumns = 'repeat(' + cols + ',' + cell + 'px)';
+        for (var c = 0; c < cols; c++) {
+            var first = c * 7 - lead; if (first < 0) first = 0;
+            var m = first < n ? addDays(start, first).slice(5, 7) : '';
+            // 只在该列确实落在新月份、且后面还有至少两列时才标，避免末尾挤字
+            if (m && m !== last && c < cols - 1) { mh += '<span>' + (+m) + '月</span>'; last = m; }
+            else { if (m) last = last || m; mh += '<span></span>'; }
+        }
+        months.innerHTML = mh;
+
+        document.getElementById('tk-range').textContent =
+            d.range.from + ' → ' + d.range.to + ' · ' + d.totals.active_days + ' 天活跃';
+        document.getElementById('tk-scale').innerHTML = tkView === 'cumul'
+            ? '0%<i></i><i class="l1"></i><i class="l2"></i><i class="l3"></i>100%'
+            : '少<i></i><i class="l1"></i><i class="l2"></i><i class="l3"></i>多';
+        document.getElementById('tk-cap').textContent = tkView === 'daily'
+            ? '每格一天，按非零日用量的三分位着色 —— 峰值是地板的数百倍，线性着色会让绝大多数天变成空白。'
+            : tkView === 'weekly'
+            ? '整列同色，一列读作一周的合计；分位在周合计上重算，回答的是「哪几周重」。'
+            : '按累计量占最终总量的比例分四段：0–25% / 25–50% / 50–75% / 75–100%。带越窄说明那段时间涨得越猛。';
+    }
+
+    document.getElementById('tk-views').addEventListener('click', function (e) {
+        var btn = e.target.closest ? e.target.closest('button[data-view]') : null;
+        if (!btn || !tkData) return;
+        tkView = btn.dataset.view;
+        var all = this.querySelectorAll('button[data-view]');
+        for (var i = 0; i < all.length; i++) {
+            all[i].setAttribute('aria-selected', all[i] === btn ? 'true' : 'false');
+        }
+        drawMap();
+    });
+
+    renderTokens(TOKENS_SNAPSHOT);
+
+    var tkResizeTimer = null;
+    addEventListener('resize', function () {
+        if (!tkData) return;
+        clearTimeout(tkResizeTimer);
+        tkResizeTimer = setTimeout(drawMap, 150);
+    });
+
+    /* 覆盖快照；取不到就静默留在快照上，绝不让统计服务拖垮首页 */
+    (function () {
+        try {
+            var c = JSON.parse(localStorage.getItem(TK_KEY) || 'null');
+            if (c && Date.now() - c.t < TK_TTL && c.d && c.d.v === 1) {
+                renderTokens(c.d); observe(); return;
+            }
+        } catch (e) {}
+        // no-cache = 强制回源校验。本域 Browser Cache TTL 是 4 小时，会覆盖源站的
+        // max-age=60；命中 ETag 时返回 304，几乎不产生流量。与上面 status.json 同款写法。
+        fetch('https://tt.sakuramu.edu.kg/v1/stats/sakuramu', { cache: 'no-cache' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+                if (!d || d.v !== 1 || !d.daily || !d.daily.tokens.length) return;
+                renderTokens(d); observe();
+                try { localStorage.setItem(TK_KEY, JSON.stringify({ t: Date.now(), d: d })); } catch (e) {}
+            }).catch(function () {});
+    })();
 
     renderAll(PROJECTS);
     document.querySelectorAll('[data-count]').forEach(countUp);
