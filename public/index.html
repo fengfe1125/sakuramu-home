@@ -18,14 +18,14 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <style>
 /* ═════ 1. 令牌 ═════ */
 :root {
     --paper:#F4F2EA; --sheet:#FBFAF5; --ink:#1A1C16;
     --ink-soft:rgba(26,28,22,.80); --ink-faint:rgba(26,28,22,.62);
-    --rule:rgba(26,28,22,.15); --rule-strong:rgba(26,28,22,.26);
+    --rule:rgba(26,28,22,.12); --rule-strong:rgba(26,28,22,.2);
     --accent:#B24E33; --grid:rgba(26,28,22,.045);
     --hover:rgba(178,78,51,.07); --chip:rgba(26,28,22,.05);
     --empty:rgba(26,28,22,.07);
@@ -34,6 +34,9 @@
        389.17ms 弹簧，25% 处过冲到 1.048。 */
     --spring:linear(0 0%, 0.013389 1%, 0.049373 2%, 0.102262 3%, 0.167133 4%, 0.239788 5%, 0.316716 6%, 0.395034 7%, 0.472432 8%, 0.547109 9%, 0.617715 10%, 0.68329 11%, 0.743204 12%, 0.797107 13%, 0.844877 14%, 0.886576 15%, 0.922409 16%, 0.952689 17%, 0.977806 18%, 0.998202 19%, 1.014346 20%, 1.026718 21%, 1.035795 22%, 1.042036 23%, 1.045879 24%, 1.04773 25%, 1.047962 26%, 1.046909 27%, 1.04487 28%, 1.042104 29%, 1.038837 30%, 1.035258 31%, 1.031524 32%, 1.027766 33%, 1.024084 34%, 1.020558 35%, 1.017245 36%, 1.014186 37%, 1.011406 38%, 1.008919 39%, 1.006726 40%, 1.004821 41%, 1.003194 42%, 1.001828 43%, 1.000702 44%, 0.999796 45%, 0.999085 46%, 0.998548 47%, 0.998162 48%, 0.997904 49%, 0.997755 50%, 0.997695 51%, 0.997707 52%, 0.997776 53%, 0.997887 54%, 0.998029 55%, 0.998192 56%, 0.998368 57%, 0.998548 58%, 0.998728 59%, 0.998903 60%, 0.999069 61%, 0.999224 62%, 0.999366 63%, 0.999495 64%, 0.99961 65%, 0.99971 66%, 0.999797 67%, 0.999871 68%, 0.999932 69%);
     --ease-dd:cubic-bezier(.23,.88,.26,.92);
+    /* 参考站 innei.in 的默认交互过渡：0.2s cubic-bezier(.4,0,.2,1)，
+       全站 26+13 处都用它，只有少数"要弹一下"的地方换别的曲线。 */
+    --ease-ui:cubic-bezier(.4,0,.2,1);
 }
 @media (prefers-color-scheme:dark) {
     :root {
@@ -52,7 +55,8 @@ body {
     background-image:linear-gradient(var(--grid) 1px,transparent 1px),
                      linear-gradient(90deg,var(--grid) 1px,transparent 1px);
     background-size:64px 64px; animation:drift 90s linear infinite;
-    color:var(--ink); font-family:'DM Sans','Noto Sans SC',-apple-system,sans-serif;
+    color:var(--ink); font-family:'DM Sans','Noto Serif SC',-apple-system,serif;
+    line-height:1.75;
     min-height:100dvh; display:grid; place-items:start center;
     padding:clamp(14px,4vw,72px); -webkit-font-smoothing:antialiased;
 }
@@ -111,7 +115,7 @@ body {
    .t-work / .t-link 上的 transition (0,1,0)，分开写等于白写。 */
 .js .reveal { opacity:0; filter:blur(6px);
     transition:opacity .75s ease,filter .75s ease,
-               background-color .25s,scale .389s var(--spring); }
+               background-color .2s var(--ease-ui),scale .389s var(--spring); }
 .js .reveal.in { opacity:1; filter:blur(0); }
 
 /* 逐词揭示：45ms 交错，同样无位移 */
@@ -126,11 +130,13 @@ body {
 .t-work:active,.t-link:active,.t-contact:active { scale:.985; }
 
 /* 每块砖统一的内边距 */
-.pad { padding:clamp(26px,2.8vw,40px); }
+/* 间距刻度取自参考站：3.5 / 7 / 14 / 28 / 35 / 42 / 56 / 70px，
+   即 14px 根字号下的 0.25rem 倍数。这里取 2rem→4rem 段。 */
+.pad { padding:clamp(28px,3.6vw,56px); }
 
 /* ═════ 4. 顶栏 ═════ */
 .t-meta { display:flex; justify-content:space-between; align-items:center; gap:12px;
-    padding:18px clamp(20px,2.8vw,40px);
+    padding:24px clamp(28px,3.6vw,56px);
     font-family:'JetBrains Mono',monospace; font-size:11px;
     letter-spacing:.06em; color:var(--ink-faint); }
 .t-meta strong { font-weight:500; color:var(--ink-soft); }
@@ -163,8 +169,10 @@ body {
 /* 入场交给逐字 blur 揭示（见 .pre .w）。原来的 risein 用 backwards 填充，
    起始态是 opacity:0 —— 后台标签页里动画被挂起，标题就一直不可见；
    它带的 translateY 也正是参考站刻意不做的位移。 */
-h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
-    font-size:clamp(2.4rem,5vw,3.4rem); letter-spacing:-.05em; line-height:.95; }
+/* 中文衬线 + 字重 400。参考站 342 处用 400、仅 39 处用 500，几乎不用粗体——
+   份量靠字号和留白给，不靠加粗。 */
+h1 { font-family:'Noto Serif SC',serif; font-weight:400;
+    font-size:clamp(2.6rem,5.4vw,3.8rem); letter-spacing:-.02em; line-height:1.15; }
 .handle { font-family:'JetBrains Mono',monospace; font-size:.76rem;
     color:var(--ink-faint); margin-top:8px; letter-spacing:.03em; }
 .status { display:none; align-items:center; gap:7px; margin-top:14px; align-self:flex-start;
@@ -176,10 +184,10 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
 
 /* ═════ 7. 统计：砖中砖 2×2 ═════ */
 .t-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:var(--rule); }
-.stat { background:var(--sheet); padding:28px 12px; text-align:center;
+.stat { background:var(--sheet); padding:42px 14px; text-align:center;
     display:flex; flex-direction:column; justify-content:center; }
-.stat b { display:block; font-family:'Noto Sans SC',sans-serif;
-    font-size:clamp(1.3rem,2.6vw,1.8rem); font-weight:700; letter-spacing:-.03em;
+.stat b { display:block; font-family:'Noto Serif SC',serif;
+    font-size:clamp(1.4rem,2.8vw,1.9rem); font-weight:500; letter-spacing:-.02em;
     line-height:1; font-variant-numeric:tabular-nums; }
 .stat span { display:block; margin-top:6px; font-family:'JetBrains Mono',monospace;
     font-size:.6rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); }
@@ -188,7 +196,7 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
 
 /* ═════ 8. 引言砖 ═════ */
 .t-quote { display:flex; flex-direction:column; justify-content:center; }
-.t-quote em { display:block; font-style:normal; font-size:1.1rem; font-weight:500;
+.t-quote em { display:block; font-style:normal; font-size:1.25rem; font-weight:400;
     letter-spacing:-.01em; margin-bottom:8px; }
 .t-quote small { font-family:'JetBrains Mono',monospace; font-size:.72rem;
     color:var(--ink-faint); line-height:1.75; }
@@ -228,7 +236,7 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
    数字砖沿用 .stat 的砖中砖；热力图沿用 .months 的三级色阶，
    grid-auto-flow:column + 7 行让按日排列的 DOM 自动成为周列，无需索引运算。 */
 .t-tkstat { display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:var(--rule); }
-.t-tkstat .stat b { font-size:clamp(1.05rem,2vw,1.4rem); }
+.t-tkstat .stat b { font-size:clamp(1.15rem,2.2vw,1.55rem); }
 /* 断点必须写在基础规则之后：两者同为单类选择器，靠源码顺序决胜负 */
 @media (max-width:1000px) { .t-tkstat { grid-template-columns:repeat(3,1fr); } }
 @media (max-width:600px)  { .t-tkstat { grid-template-columns:repeat(2,1fr); } }
@@ -275,11 +283,11 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
 
 /* ═════ 10. 版块标题条 ═════ */
 .t-head { display:flex; align-items:baseline; gap:11px;
-    padding:26px clamp(20px,2.8vw,40px);
+    padding:42px clamp(28px,3.6vw,56px);
     font-family:'JetBrains Mono',monospace; font-size:10.5px;
     letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint); }
 .t-head b { color:var(--accent); font-weight:500; }
-.t-head .zh { margin-left:auto; font-family:'Noto Sans SC',sans-serif;
+.t-head .zh { margin-left:auto; font-family:'Noto Serif SC',serif;
     font-size:.76rem; letter-spacing:0; text-transform:none; }
 .t-head .n { font-family:'JetBrains Mono',monospace; font-size:.64rem; }
 
@@ -290,10 +298,10 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
 .t-work .no { position:absolute; top:13px; right:15px;
     font-family:'JetBrains Mono',monospace; font-size:.6rem; color:var(--ink-faint); }
 .wtop { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:9px; padding-right:26px; }
-.wname { font-size:.98rem; font-weight:700; letter-spacing:-.01em; }
+.wname { font-size:1.02rem; font-weight:500; letter-spacing:-.01em; }
 .wlang,.wstar { display:inline-flex; align-items:center; gap:5px;
     font-family:'JetBrains Mono',monospace; font-size:.64rem; color:var(--ink-faint); }
-.wdesc { font-size:.79rem; line-height:1.7; color:var(--ink-soft); margin-bottom:12px; }
+.wdesc { font-size:.85rem; line-height:1.95; color:var(--ink-soft); margin-bottom:16px; }
 .tags { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:12px; }
 .tags b { font-family:'JetBrains Mono',monospace; font-weight:400; font-size:.6rem;
     padding:3px 6px; background:var(--chip); color:var(--ink-faint); letter-spacing:.03em; }
@@ -332,7 +340,7 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
     color:var(--ink-faint); margin-top:4px; }
 
 .t-contact { display:flex; align-items:center; justify-content:space-between; gap:14px;
-    padding:26px clamp(20px,2.8vw,40px); text-decoration:none; color:inherit;
+    padding:42px clamp(28px,3.6vw,56px); text-decoration:none; color:inherit;
     transition:background-color .25s; }
 .t-contact:hover { background:var(--hover); }
 .t-contact .k { font-family:'JetBrains Mono',monospace; font-size:.63rem;
@@ -428,7 +436,7 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
         <div><dt>托管</dt><dd>Cloudflare Workers · Static Assets</dd></div>
         <div><dt>构建</dt><dd>无框架、无构建步骤，单个 HTML 文件</dd></div>
         <div><dt>数据</dt><dd>项目信息来自 GitHub API，部署时烧录快照兜底</dd></div>
-        <div><dt>字体</dt><dd>DM Sans · Noto Sans SC · JetBrains Mono</dd></div>
+        <div><dt>字体</dt><dd>DM Sans · Noto Serif SC · JetBrains Mono</dd></div>
         <div><dt>源码</dt><dd><a href="https://github.com/fengfe1125/sakuramu-home" target="_blank" rel="noopener">fengfe1125/sakuramu-home</a></dd></div>
     </dl>
 
