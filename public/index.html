@@ -351,120 +351,120 @@ dl a:hover { border-bottom-color:var(--accent); }
     'use strict';
     var still = matchMedia('(prefers-reduced-motion: reduce)').matches;
     var PROJECTS = [
-            {
-                    "n": "tokentracker",
-                    "t": "TokenTracker",
-                    "d": "macOS 状态栏常驻，统计本机 Claude Code、Codex、Kimi Code、opencode 等七个 AI 编程工具的 Token 用量与成本。用量日志只在本机读取和保存，不上传。",
-                    "g": [
-                            "macOS",
-                            "SwiftUI",
-                            "菜单栏"
-                    ],
-                    "l": "Swift",
-                    "s": 1,
-                    "p": "2026-09-07T15:14:35Z"
-            },
-            {
-                    "n": "devdisk",
-                    "t": "DevDisk",
-                    "d": "外置开发盘的状态面板与安全弹出工具。gradle daemon、adb、Xcode 会长期持有盘上的文件句柄，直接推出会截断缓存写入、事后变成莫名其妙的构建失败。它查清占用并按正确顺序弹出。",
-                    "g": [
-                            "macOS",
-                            "SwiftUI",
-                            "菜单栏"
-                    ],
-                    "l": "Swift",
-                    "s": 0,
-                    "p": "2026-09-07T02:12:53Z"
-            },
-            {
-                    "n": "portdeck",
-                    "t": "PortDeck",
-                    "d": "本地端口监控面板。解析 lsof / ss / netstat 全量发现监听端口，再用三级策略识别服务：IANA 端口表、进程名映射、主动 HTTP 探测读取页面 title 与 favicon。零依赖，只监听 127.0.0.1。",
-                    "g": [
-                            "Node.js",
-                            "零依赖",
-                            "本地工具"
-                    ],
-                    "l": "JavaScript",
-                    "s": 0,
-                    "p": "2026-08-22T06:18:27Z"
-            },
-            {
-                    "n": "douyin-caption",
-                    "t": "douyin-caption",
-                    "d": "给一条抖音分享链接，提取简介与图文长文，定标题、分段排版，再写看法 / 评价 / 总结，输出 Markdown。不做语音转写，也不下载视频。面向会读 SKILL.md 的 agent。",
-                    "g": [
-                            "Python",
-                            "skill"
-                    ],
-                    "l": "Python",
-                    "s": 0,
-                    "p": "2026-08-15T08:18:08Z"
-            },
-            {
-                    "n": "podcast-to-text",
-                    "t": "podcast-to-text",
-                    "d": "把中文播客转成带说话人区分的可读文字稿，不是字幕。通用转写工具为字幕设计，断句极碎、中文零标点、两人的话混成一片。这里用 whisper.cpp + FunASR CAM++ 说话人分离 + ct-punc 标点恢复。",
-                    "g": [
-                            "Python",
-                            "语音识别",
-                            "skill"
-                    ],
-                    "l": "Python",
-                    "s": 1,
-                    "p": "2026-08-14T12:46:23Z"
-            },
-            {
-                    "n": "agent-dispatch-skill",
-                    "t": "agent-dispatch-skill",
-                    "d": "决定一个任务该不该拆给本机其他 AI CLI 并行做，以及怎么派、怎么验收。默认答案是「不派」，正文大半在讲否决条件与验收协议。含真机实测结论：多个模型答案一致并不构成正确的证据。",
-                    "g": [
-                            "Shell",
-                            "多 agent",
-                            "skill"
-                    ],
-                    "l": "Shell",
-                    "s": 1,
-                    "p": "2026-08-11T15:12:02Z"
-            },
-            {
-                    "n": "sakuramu.github.io",
-                    "t": "sakuramu.github.io",
-                    "d": "早期的 GitHub Pages 个人主页，现已由本站接替。",
-                    "g": [
-                            "HTML"
-                    ],
-                    "l": "HTML",
-                    "s": 0,
-                    "p": "2026-08-02T17:47:24Z"
-            },
-            {
-                    "n": "gouji-6deck-eagle",
-                    "t": "够级 · 6副牌带鹰",
-                    "d": "6 人手机网页扑克游戏原型。房间码加入、WebSocket 实时同步；330 张牌每人 55 张，鹰牌最大并可作挂牌加入同点数组合，带走科 / 末科 / 落贡提示。",
-                    "g": [
-                            "JavaScript",
-                            "WebSocket",
-                            "游戏"
-                    ],
-                    "l": "JavaScript",
-                    "s": 0,
-                    "p": "2026-04-28T16:56:24Z"
-            },
-            {
-                    "n": "mufeng",
-                    "t": "Mufeng",
-                    "d": "让手机安全访问电脑上 Codex UI 的私有入口。Node/Express + SQLite 提供登录门禁与设备审批，通过认证后反向代理上游 UI，可配合 Nginx 与 Tailscale Serve 对外暴露。",
-                    "g": [
-                            "Node.js",
-                            "reverse-proxy",
-                            "tailscale"
-                    ],
-                    "l": "JavaScript",
-                    "s": 0,
-                    "p": "2026-04-03T06:11:53Z"
-            }
+        {
+            "n": "tokentracker",
+            "t": "TokenTracker",
+            "d": "macOS 状态栏常驻，统计本机 Claude Code、Codex、Kimi Code、opencode 等七个 AI 编程工具的 Token 用量与成本。用量日志只在本机读取和保存，不上传。",
+            "g": [
+                "macOS",
+                "SwiftUI",
+                "菜单栏"
+            ],
+            "l": "Swift",
+            "s": 1,
+            "p": "2026-09-10T02:24:23Z"
+        },
+        {
+            "n": "devdisk",
+            "t": "DevDisk",
+            "d": "外置开发盘的状态面板与安全弹出工具。gradle daemon、adb、Xcode 会长期持有盘上的文件句柄，直接推出会截断缓存写入、事后变成莫名其妙的构建失败。它查清占用并按正确顺序弹出。",
+            "g": [
+                "macOS",
+                "SwiftUI",
+                "菜单栏"
+            ],
+            "l": "Swift",
+            "s": 0,
+            "p": "2026-09-09T07:50:32Z"
+        },
+        {
+            "n": "portdeck",
+            "t": "PortDeck",
+            "d": "本地端口监控面板。解析 lsof / ss / netstat 全量发现监听端口，再用三级策略识别服务：IANA 端口表、进程名映射、主动 HTTP 探测读取页面 title 与 favicon。零依赖，只监听 127.0.0.1。",
+            "g": [
+                "Node.js",
+                "零依赖",
+                "本地工具"
+            ],
+            "l": "JavaScript",
+            "s": 0,
+            "p": "2026-08-22T06:18:27Z"
+        },
+        {
+            "n": "douyin-caption",
+            "t": "douyin-caption",
+            "d": "给一条抖音分享链接，提取简介与图文长文，定标题、分段排版，再写看法 / 评价 / 总结，输出 Markdown。不做语音转写，也不下载视频。面向会读 SKILL.md 的 agent。",
+            "g": [
+                "Python",
+                "skill"
+            ],
+            "l": "Python",
+            "s": 0,
+            "p": "2026-08-15T08:18:08Z"
+        },
+        {
+            "n": "podcast-to-text",
+            "t": "podcast-to-text",
+            "d": "把中文播客转成带说话人区分的可读文字稿，不是字幕。通用转写工具为字幕设计，断句极碎、中文零标点、两人的话混成一片。这里用 whisper.cpp + FunASR CAM++ 说话人分离 + ct-punc 标点恢复。",
+            "g": [
+                "Python",
+                "语音识别",
+                "skill"
+            ],
+            "l": "Python",
+            "s": 1,
+            "p": "2026-08-14T12:46:23Z"
+        },
+        {
+            "n": "agent-dispatch-skill",
+            "t": "agent-dispatch-skill",
+            "d": "决定一个任务该不该拆给本机其他 AI CLI 并行做，以及怎么派、怎么验收。默认答案是「不派」，正文大半在讲否决条件与验收协议。含真机实测结论：多个模型答案一致并不构成正确的证据。",
+            "g": [
+                "Shell",
+                "多 agent",
+                "skill"
+            ],
+            "l": "Shell",
+            "s": 1,
+            "p": "2026-08-11T15:12:02Z"
+        },
+        {
+            "n": "sakuramu.github.io",
+            "t": "sakuramu.github.io",
+            "d": "早期的 GitHub Pages 个人主页，现已由本站接替。",
+            "g": [
+                "HTML"
+            ],
+            "l": "HTML",
+            "s": 0,
+            "p": "2026-08-02T17:47:24Z"
+        },
+        {
+            "n": "gouji-6deck-eagle",
+            "t": "够级 · 6副牌带鹰",
+            "d": "6 人手机网页扑克游戏原型。房间码加入、WebSocket 实时同步；330 张牌每人 55 张，鹰牌最大并可作挂牌加入同点数组合，带走科 / 末科 / 落贡提示。",
+            "g": [
+                "JavaScript",
+                "WebSocket",
+                "游戏"
+            ],
+            "l": "JavaScript",
+            "s": 0,
+            "p": "2026-04-28T16:56:24Z"
+        },
+        {
+            "n": "mufeng",
+            "t": "Mufeng",
+            "d": "让手机安全访问电脑上 Codex UI 的私有入口。Node/Express + SQLite 提供登录门禁与设备审批，通过认证后反向代理上游 UI，可配合 Nginx 与 Tailscale Serve 对外暴露。",
+            "g": [
+                "Node.js",
+                "reverse-proxy",
+                "tailscale"
+            ],
+            "l": "JavaScript",
+            "s": 0,
+            "p": "2026-04-03T06:11:53Z"
+        }
     ];
     var COLORS = { Swift:'#F05138', JavaScript:'#f1e05a', Python:'#3572A5',
         Shell:'#89e051', HTML:'#e34c26', TypeScript:'#3178c6', CSS:'#563d7c',
