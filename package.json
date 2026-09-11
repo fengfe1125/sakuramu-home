@@ -3,7 +3,9 @@
   "private": true,
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "snapshot": "node scripts/refresh-snapshot.mjs",
+    "deploy": "npm run snapshot && wrangler deploy",
+    "deploy:about": "wrangler deploy --config wrangler.v2.jsonc",
     "versions": "wrangler versions list"
   },
   "devDependencies": {
