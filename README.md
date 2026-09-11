@@ -15,9 +15,10 @@
 
 ```bash
 npm run dev            # 本地预览主站 http://localhost:8787
-npm run snapshot       # 只刷新烧录的 Token 快照，不部署
+npm run snapshot       # 只刷新烧录的快照，不部署
+npm run notes          # 只渲染手记，不部署
 npm run deploy         # 刷新快照 + 部署主站
-npm run deploy:about   # 部署关于页
+npm run deploy:about   # 渲染手记 + 部署关于页
 ```
 
 首次使用需要 `npx wrangler login` 授权。
@@ -60,12 +61,40 @@ npm run deploy:about   # 部署关于页
 > 页面会**静默回落到烧录快照**而不报错 —— 这是有意的安全失败，
 > 但升版时记得同步改页面。
 
+## 写手记
+
+往 `v2/notes/` 放一个 `.md` 文件，然后 `npm run deploy:about`。
+
+```markdown
+---
+title: 标题
+date: 2026-09-11
+---
+
+正文……
+```
+
+按 front-matter 里的 `date` 倒序排，最新的在最上面。
+支持标题、加粗、强调、行内代码、链接、列表、引用、代码块、分割线。
+
+**Markdown 在发版时渲染成 HTML 直接写进页面**，不在浏览器里解析：
+
+- 站点的原则是「无构建步骤、单个自包含 HTML」——
+  访客拿到的应该是成品，不是一个还要自己组装的半成品。
+- 解析器只在 Node 里跑一次，不必让每个访客都下载一份。
+- 没有 fetch 就没有 CORS、没有加载失败、没有空白态。
+
+排版上自动做两件手打容易漏的事：**中西文之间补空格**
+（写 `TokenTracker和macOS` 会渲染成 `TokenTracker 和 macOS`），
+以及**正文第一段首字下沉**。
+
 ## 目录结构
 
 ```
 public/index.html   主页（唯一页面，CSS 与 JS 全部内联）
 public/avatar.jpg   头像
 public/status.json  状态气泡，直接编辑即可生效
-v2/index.html       关于页
+v2/index.html       关于页（手记渲染进这里）
+v2/notes/*.md       手记原稿
 scripts/            发版脚本
 ```

@@ -4,8 +4,9 @@
   "scripts": {
     "dev": "wrangler dev",
     "snapshot": "node scripts/refresh-snapshot.mjs",
+    "notes": "node scripts/build-notes.mjs",
     "deploy": "npm run snapshot && wrangler deploy",
-    "deploy:about": "wrangler deploy --config wrangler.v2.jsonc",
+    "deploy:about": "npm run notes && wrangler deploy --config wrangler.v2.jsonc",
     "versions": "wrangler versions list"
   },
   "devDependencies": {

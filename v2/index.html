@@ -245,6 +245,56 @@ dl a:hover { border-bottom-color:var(--accent); }
 .stack dt { font-family:'JetBrains Mono',monospace; font-size:.6rem; letter-spacing:.12em;
     text-transform:uppercase; color:var(--ink-faint); }
 .stack dd { font-size:.95rem; color:var(--ink-soft); margin-top:6px; }
+
+/* ═════ 手记 ═════ */
+.note { max-width:34em; padding-top:var(--s7); border-top:1px solid var(--rule); }
+.note:first-child { padding-top:0; border-top:0; }
+.note + .note { margin-top:var(--s7); }
+.note-meta { font-family:'JetBrains Mono',monospace; font-size:.62rem;
+    letter-spacing:.1em; color:var(--ink-faint); }
+.note-title { font-family:'Noto Serif SC',serif; font-weight:500;
+    font-size:1.5rem; line-height:1.4; letter-spacing:-.01em; margin-top:var(--s2); }
+
+.note-body { margin-top:var(--s5); }
+.note-body p { margin-top:var(--s4); color:var(--ink-soft);
+    font-size:1.02rem; line-height:1.95; }
+.note-body p:first-of-type { margin-top:0; }
+
+/* 首字下沉：只作用在正文第一段。中日文方块字本身填满字面框，
+   不像拉丁字母那样需要额外的光学补偿，所以行高压到 .78 就够贴。 */
+.note-body > p:first-of-type::first-letter {
+    float:left; font-family:'Noto Serif SC',serif; font-weight:500;
+    font-size:3.4em; line-height:.78; color:var(--accent);
+    margin:.06em .12em 0 0;
+}
+
+.note-body h3,.note-body h4,.note-body h5 {
+    font-family:'Noto Serif SC',serif; font-weight:500; line-height:1.5;
+    margin-top:var(--s6); color:var(--ink); }
+.note-body h3 { font-size:1.2rem; }
+.note-body h4 { font-size:1.05rem; }
+.note-body h5 { font-size:.98rem; }
+.note-body a { color:var(--accent); text-decoration:none;
+    border-bottom:1px solid color-mix(in srgb,var(--accent) 40%,transparent);
+    transition:border-color .2s var(--ease-ui); }
+.note-body a:hover { border-bottom-color:var(--accent); }
+.note-body strong { font-weight:500; color:var(--ink); }
+.note-body em { font-style:normal; color:var(--ink);
+    border-bottom:1px solid var(--rule-strong); }
+.note-body code { font-family:'JetBrains Mono',monospace; font-size:.82em;
+    padding:2px 5px; background:var(--chip); }
+.note-body pre { margin-top:var(--s4); padding:var(--s4); background:var(--chip);
+    overflow-x:auto; }
+.note-body pre code { padding:0; background:none; font-size:.78rem; line-height:1.8; }
+.note-body blockquote { margin-top:var(--s4); padding-left:var(--s4);
+    border-left:2px solid var(--rule-strong); color:var(--ink-faint); }
+.note-body blockquote p { margin-top:0; color:inherit; }
+.note-body ul,.note-body ol { margin-top:var(--s4); padding-left:1.4em;
+    color:var(--ink-soft); }
+.note-body li { margin-top:var(--s2); line-height:1.95; }
+.note-body hr { margin:var(--s6) 0; border:0; border-top:1px solid var(--rule); }
+.note-empty { color:var(--ink-faint); font-family:'JetBrains Mono',monospace;
+    font-size:.72rem; }
 </style>
 </head>
 <body>
@@ -297,6 +347,27 @@ dl a:hover { border-bottom-color:var(--accent); }
         <div><dt>编辑器</dt><dd>VS Code · 终端</dd></div>
     </dl>
     <div class="todo reveal" style="max-width:34em">这几格按你实际用的改。</div>
+</section>
+
+<section>
+    <div class="label reveal">Notes <span class="zh">手记</span></div>
+<!-- notes:start -->
+        <article class="note reveal">
+            <div class="note-meta">2026年9月11日 周五</div>
+            <h2 class="note-title">把重复的操作变成不用想的操作</h2>
+            <div class="note-body">
+                <p>这是一篇示例手记，用来演示排版。删掉这个文件，或者直接改成你自己的内容。</p>
+                <p>写法很简单：往 <code>v2/notes/</code> 里丢一个 <code>.md</code> 文件，开头用 <code>---</code> 包一段 front-matter 写标题和日期，然后正文照常写 Markdown。发版时会自动渲染成 HTML 直接写进页面，<strong>访客那边不需要下载任何解析器</strong>。</p>
+                <h4>支持哪些写法</h4>
+                <p>常用的都在：<strong>加粗</strong>、<em>强调</em>、<code>行内代码</code>、<a href="https://sakuramu.edu.kg" target="_blank" rel="noopener">外链</a>，以及列表、引用、代码块和分割线。</p>
+                <ul><li>中英文之间会自动补空格，比如 TokenTracker 和 macOS 这种混排</li><li>数字也一样，写 365 天不用自己敲空格</li><li>正文第一段的首字会自动下沉</li></ul>
+                <blockquote>引用长这样。段落之间留空行就会各自成段。</blockquote>
+                <pre><code>// 代码块保持原样，不做任何转义之外的处理&#10;public static func isAcceptedBundleID(_ id: String) -&gt; Bool {&#10;    id == bundleIDRoot || id.hasPrefix(bundleIDRoot + &quot;.&quot;)&#10;}</code></pre>
+                <hr>
+                <p>文件名建议用 <code>日期-标题.md</code> 的形式，排序按 front-matter 里的 <code>date</code> 倒序，最新的在最上面。</p>
+            </div>
+        </article>
+        <!-- notes:end -->
 </section>
 
 <section class="col">
