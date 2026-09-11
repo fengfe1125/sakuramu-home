@@ -663,13 +663,26 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
     /* ── 动画 ── */
     function countUp(el) {
         var t = +el.dataset.count, f = el.dataset.fmt;
-        if (still) { el.textContent = f ? fmtV(t, f) : t; return; }
-        var s = performance.now();
+        var finalText = f ? fmtV(t, f) : String(Math.round(t));
+        // 后台或失焦标签页里 requestAnimationFrame 会被暂停。原来的写法会先把
+        // 第 0 帧（也就是 0）写进 DOM 再等 rAF，于是数字永远停在 0 —— 动画没跑成，
+        // 屏幕上留下的却是占位值而不是真实数字。
+        if (still || document.hidden) { el.textContent = finalText; return; }
+        var s = performance.now(), settled = false;
+        function settle() {
+            if (settled) return;
+            settled = true;
+            el.textContent = finalText;
+        }
+        // 兜底：不管 rAF 有没有被节流，最终值一定会在 1.4s 内落地。
+        setTimeout(settle, 1400);
         (function tick(n) {
+            if (settled) return;
             var p = Math.min((n - s) / 1100, 1);
-            var v = t * (1 - Math.pow(1 - p, 3));
-            el.textContent = f ? fmtV(v, f) : Math.round(v);
-            if (p < 1) requestAnimationFrame(tick);
+            if (p >= 1) { settle(); return; }
+            el.textContent = f ? fmtV(t * (1 - Math.pow(1 - p, 3)), f)
+                               : Math.round(t * (1 - Math.pow(1 - p, 3)));
+            requestAnimationFrame(tick);
         })(s);
     }
     function fill(root) {
@@ -744,8 +757,12 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
     function weekdayMon(iso) { return (dayParts(iso).getDay() + 6) % 7; }
 
     function tkStat(v, fmt, label) {
-        return '<div class="stat"><b data-count="' + v + '" data-fmt="' + fmt + '">0</b>' +
-               '<span>' + esc(label) + '</span></div>';
+        // 初始文本就是最终值，countUp 只是锦上添花的动画。
+        // 数字展示不能把动画当成显示的前提：动画一旦没跑成
+        // （重渲染后砖已 reveal、后台标签页 rAF 被节流、抛异常），
+        // 留在屏幕上的必须是真实数字，而不是占位的 0。
+        return '<div class="stat"><b data-count="' + v + '" data-fmt="' + fmt + '">' +
+               esc(fmtV(v, fmt)) + '</b><span>' + esc(label) + '</span></div>';
     }
 
     function renderTokens(d) {
@@ -784,6 +801,15 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
             return '<div><dt>' + r[0] + '</dt><dd>' + r[1] + '</dd></div>'; }).join('');
 
         drawMap();
+
+        // observe() 只观察 .reveal:not(.in)，所以砖一旦露出过，后续重渲染
+        // 换上的新节点就再也不会被 revealNow 处理 —— countUp 不跑、进度条不填。
+        // 对已经 reveal 过的砖直接补跑一次。
+        ['tk-stats', 'tk-agents'].forEach(function (id) {
+            var el = document.getElementById(id);
+            var tile = el && el.closest ? el.closest('.reveal') : null;
+            if (tile && tile.classList.contains('in')) revealNow(tile);
+        });
     }
 
     /* 每日=非零值三分位；每周=整列同色、在周合计上重算分位；
