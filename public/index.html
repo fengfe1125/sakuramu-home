@@ -29,6 +29,11 @@
     --accent:#B24E33; --grid:rgba(26,28,22,.045);
     --hover:rgba(178,78,51,.07); --chip:rgba(26,28,22,.05);
     --empty:rgba(26,28,22,.07);
+
+    /* 缓动取自 devouringdetails.com 生产环境 CSS，不是凭感觉调的：
+       389.17ms 弹簧，25% 处过冲到 1.048。 */
+    --spring:linear(0 0%, 0.013389 1%, 0.049373 2%, 0.102262 3%, 0.167133 4%, 0.239788 5%, 0.316716 6%, 0.395034 7%, 0.472432 8%, 0.547109 9%, 0.617715 10%, 0.68329 11%, 0.743204 12%, 0.797107 13%, 0.844877 14%, 0.886576 15%, 0.922409 16%, 0.952689 17%, 0.977806 18%, 0.998202 19%, 1.014346 20%, 1.026718 21%, 1.035795 22%, 1.042036 23%, 1.045879 24%, 1.04773 25%, 1.047962 26%, 1.046909 27%, 1.04487 28%, 1.042104 29%, 1.038837 30%, 1.035258 31%, 1.031524 32%, 1.027766 33%, 1.024084 34%, 1.020558 35%, 1.017245 36%, 1.014186 37%, 1.011406 38%, 1.008919 39%, 1.006726 40%, 1.004821 41%, 1.003194 42%, 1.001828 43%, 1.000702 44%, 0.999796 45%, 0.999085 46%, 0.998548 47%, 0.998162 48%, 0.997904 49%, 0.997755 50%, 0.997695 51%, 0.997707 52%, 0.997776 53%, 0.997887 54%, 0.998029 55%, 0.998192 56%, 0.998368 57%, 0.998548 58%, 0.998728 59%, 0.998903 60%, 0.999069 61%, 0.999224 62%, 0.999366 63%, 0.999495 64%, 0.99961 65%, 0.99971 66%, 0.999797 67%, 0.999871 68%, 0.999932 69%);
+    --ease-dd:cubic-bezier(.23,.88,.26,.92);
 }
 @media (prefers-color-scheme:dark) {
     :root {
@@ -49,11 +54,11 @@ body {
     background-size:64px 64px; animation:drift 90s linear infinite;
     color:var(--ink); font-family:'DM Sans','Noto Sans SC',-apple-system,sans-serif;
     min-height:100dvh; display:grid; place-items:start center;
-    padding:clamp(10px,2.5vw,36px); -webkit-font-smoothing:antialiased;
+    padding:clamp(14px,4vw,72px); -webkit-font-smoothing:antialiased;
 }
 @keyframes drift { to { background-position:64px 64px; } }
 
-.sheet { width:100%; max-width:1240px; border:1px solid var(--rule-strong); position:relative; }
+.sheet { width:100%; max-width:1180px; border:1px solid var(--rule-strong); position:relative; }
 .sheet::before,.sheet::after {
     content:''; position:absolute; width:10px; height:10px;
     border:1px solid var(--rule-strong); border-width:1px 0 0 1px;
@@ -75,7 +80,7 @@ body {
 .t-quote { grid-column:span 4; }
 .t-lang  { grid-column:span 3; }
 .t-mon   { grid-column:span 3; }
-.t-work  { grid-column:span 4; }
+.t-work  { grid-column:span 6; }
 .t-link  { grid-column:span 3; }
 .t-colo  { grid-column:span 6; }
 .t-soon  { grid-column:span 3; }
@@ -100,16 +105,32 @@ body {
 }
 
 /* ═════ 3. 动画 ═════ */
-.js .reveal { opacity:0; transform:translateY(12px);
-    transition:opacity .6s cubic-bezier(.2,.7,.3,1),transform .6s cubic-bezier(.2,.7,.3,1); }
-.js .reveal.in { opacity:1; transform:none; }
+/* 揭示只做 blur + 透明度，不做位移 —— 位移会让整页"抖"一下，
+   而纯 blur 的注意力落在内容本身。参数同原站：blur(6px)→0，.75s ease。 */
+/* transition 必须写在这一条里：.js .reveal 的特异性 (0,2,0) 会整条盖掉
+   .t-work / .t-link 上的 transition (0,1,0)，分开写等于白写。 */
+.js .reveal { opacity:0; filter:blur(6px);
+    transition:opacity .75s ease,filter .75s ease,
+               background-color .25s,scale .389s var(--spring); }
+.js .reveal.in { opacity:1; filter:blur(0); }
+
+/* 逐词揭示：45ms 交错，同样无位移 */
+@keyframes fadeInBlur { to { opacity:1; filter:blur(0); } }
+/* 默认可见。只有确定要播动画时才加 .pre 把起点压成模糊 ——
+   否则后台标签页里动画被挂起，标题会整个看不见。 */
+.w { display:inline-block; }
+.pre .w { opacity:0; filter:blur(6px); }
+.pre.lit .w { animation:fadeInBlur .75s ease both; animation-delay:calc(var(--i) * 45ms); }
+
+/* 按压回弹用真实弹簧；砖很大，过冲幅度按比例收到 .985 */
+.t-work:active,.t-link:active,.t-contact:active { scale:.985; }
 
 /* 每块砖统一的内边距 */
-.pad { padding:clamp(16px,1.7vw,22px); }
+.pad { padding:clamp(26px,2.8vw,40px); }
 
 /* ═════ 4. 顶栏 ═════ */
 .t-meta { display:flex; justify-content:space-between; align-items:center; gap:12px;
-    padding:12px clamp(14px,1.7vw,20px);
+    padding:18px clamp(20px,2.8vw,40px);
     font-family:'JetBrains Mono',monospace; font-size:11px;
     letter-spacing:.06em; color:var(--ink-faint); }
 .t-meta strong { font-weight:500; color:var(--ink-soft); }
@@ -139,10 +160,11 @@ body {
 
 /* ═════ 6. 身份砖 ═════ */
 .t-id { display:flex; flex-direction:column; justify-content:center; }
+/* 入场交给逐字 blur 揭示（见 .pre .w）。原来的 risein 用 backwards 填充，
+   起始态是 opacity:0 —— 后台标签页里动画被挂起，标题就一直不可见；
+   它带的 translateY 也正是参考站刻意不做的位移。 */
 h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
-    font-size:clamp(2.4rem,5vw,3.4rem); letter-spacing:-.05em; line-height:.95;
-    animation:risein .9s .1s cubic-bezier(.2,.7,.3,1) backwards; }
-@keyframes risein { from{opacity:0;transform:translateY(16px);filter:blur(6px)} }
+    font-size:clamp(2.4rem,5vw,3.4rem); letter-spacing:-.05em; line-height:.95; }
 .handle { font-family:'JetBrains Mono',monospace; font-size:.76rem;
     color:var(--ink-faint); margin-top:8px; letter-spacing:.03em; }
 .status { display:none; align-items:center; gap:7px; margin-top:14px; align-self:flex-start;
@@ -154,7 +176,7 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
 
 /* ═════ 7. 统计：砖中砖 2×2 ═════ */
 .t-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:var(--rule); }
-.stat { background:var(--sheet); padding:16px 10px; text-align:center;
+.stat { background:var(--sheet); padding:28px 12px; text-align:center;
     display:flex; flex-direction:column; justify-content:center; }
 .stat b { display:block; font-family:'Noto Sans SC',sans-serif;
     font-size:clamp(1.3rem,2.6vw,1.8rem); font-weight:700; letter-spacing:-.03em;
@@ -253,7 +275,7 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
 
 /* ═════ 10. 版块标题条 ═════ */
 .t-head { display:flex; align-items:baseline; gap:11px;
-    padding:15px clamp(14px,1.7vw,20px);
+    padding:26px clamp(20px,2.8vw,40px);
     font-family:'JetBrains Mono',monospace; font-size:10.5px;
     letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint); }
 .t-head b { color:var(--accent); font-weight:500; }
@@ -310,7 +332,7 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
     color:var(--ink-faint); margin-top:4px; }
 
 .t-contact { display:flex; align-items:center; justify-content:space-between; gap:14px;
-    padding:16px clamp(14px,1.7vw,20px); text-decoration:none; color:inherit;
+    padding:26px clamp(20px,2.8vw,40px); text-decoration:none; color:inherit;
     transition:background-color .25s; }
 .t-contact:hover { background:var(--hover); }
 .t-contact .k { font-family:'JetBrains Mono',monospace; font-size:.63rem;
@@ -329,8 +351,10 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
 /* ═════ 14. 减少动态效果 ═════ */
 @media (prefers-reduced-motion:reduce) {
     *,*::before,*::after { animation:none !important; transition:none !important; }
-    .js .reveal { opacity:1 !important; transform:none !important; }
+    .js .reveal { opacity:1 !important; transform:none !important; filter:none !important; }
     .squares i { opacity:1 !important; transform:none !important; }
+    .pre .w { opacity:1 !important; filter:none !important; animation:none !important; }
+    .t-work:active,.t-link:active,.t-contact:active { scale:1 !important; }
 }
 </style>
 </head>
@@ -582,8 +606,15 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
 
     /* ── 项目砖：直接插进主网格，成为平铺的一部分 ── */
     var anchor = document.getElementById('works-end');
-    function renderWorks(list) {
+    /* 只展示最近更新的几个。语言分布与近 12 个月两块砖仍吃全量，
+       它们本来就是聚合视图，少了反而失真。 */
+    var WORKS_SHOWN = 4;
+
+    function renderWorks(all) {
         document.querySelectorAll('.t-work').forEach(function (n) { n.remove(); });
+        var list = all.slice().sort(function (a, b) {
+            return +new Date(b.p) - +new Date(a.p);
+        }).slice(0, WORKS_SHOWN);
         var times = list.map(function (r) { return +new Date(r.p); });
         var newest = Math.max.apply(null, times), oldest = Math.min.apply(null, times);
         var span = Math.max(newest - oldest, 1);
@@ -604,7 +635,9 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
         }).join('');
         anchor.insertAdjacentHTML('beforebegin', html);
         var n = document.querySelector('.t-head .n');
-        if (n) n.textContent = list.length + ' 个';
+        if (n) n.textContent = all.length > list.length
+            ? list.length + ' / ' + all.length + ' 个'
+            : list.length + ' 个';
     }
 
     /* ── 语言：每个仓库一个方块 ── */
@@ -648,6 +681,46 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
     }
 
     function renderAll(l) { renderWorks(l); renderSquares(l); renderMonths(l); observe(); }
+
+    /* 逐词揭示：把文本拆成 <span class="w">，用 --i 做 45ms 交错。
+       同原站：只动 blur 与透明度，不做位移。 */
+    function splitWords(el) {
+        if (!el || el.dataset.split) return;
+        // 先按空格切，再把含 CJK 的片段拆成单字 ——
+        // 中文没有词间空格，只按空格切会让"沐枫"变成一个整体，交错就没了。
+        var units = [];
+        el.textContent.trim().split(/\s+/).forEach(function (token, ti) {
+            if (/[\u4e00-\u9fff\u3040-\u30ff]/.test(token)) {
+                token.split('').forEach(function (ch) { units.push([ch, false]); });
+            } else {
+                units.push([token, true]);   // 拉丁词整体保留，后面补空格
+            }
+            if (ti >= 0) { /* 占位，空格在下面按需补 */ }
+        });
+        el.textContent = '';
+        units.forEach(function (u, i) {
+            var span = document.createElement('span');
+            span.className = 'w';
+            span.style.setProperty('--i', i);
+            span.textContent = u[0];
+            el.appendChild(span);
+            if (u[1]) el.appendChild(document.createTextNode(' '));
+        });
+        el.dataset.split = '1';
+    }
+
+    (function heroReveal() {
+        var targets = [document.querySelector('h1'), document.querySelector('.t-quote em')]
+            .filter(Boolean);
+        targets.forEach(splitWords);
+        // 减少动效偏好、或标签页在后台（rAF 与动画都会被挂起）时不播动画：
+        // 不加 .pre，文字保持原样可见。
+        if (still || document.hidden) return;
+        targets.forEach(function (el) { el.classList.add('pre'); });
+        requestAnimationFrame(function () {
+            targets.forEach(function (el) { el.classList.add('lit'); });
+        });
+    })();
 
     /* ── 状态气泡：编辑 /status.json 即可 ── */
     fetch('/status.json', { cache:'no-cache' })
@@ -696,7 +769,18 @@ h1 { font-family:'Noto Sans SC',sans-serif; font-weight:900;
         });
     }
     function revealNow(el) {
-        el.classList.add('in');
+        // 后台标签页里渲染是挂起的，过渡会停在起始帧 —— 而揭示的起始帧是
+        // opacity:0，整块内容因此不可见。动画不能是内容可见的前提：
+        // 这种情况下直接跳到终态，再把 transition 还回去，
+        // 保证之后的 hover / 按压回弹照常有过渡。
+        if (still || document.hidden) {
+            el.style.transition = 'none';
+            el.classList.add('in');
+            void el.offsetWidth;          // 提交无过渡的终态
+            el.style.transition = '';     // 还回去，后续 hover / 按压照常有过渡
+        } else {
+            el.classList.add('in');
+        }
         el.querySelectorAll('[data-count]').forEach(countUp);
         fill(el);
     }
