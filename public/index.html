@@ -153,7 +153,26 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
    塞不下时 .tkscroll 自己横向滚动，整页绝不出现横向滚动条。 */
 .tkscroll { overflow-x:auto; overflow-y:hidden; }
 .tkgrid { display:grid; grid-auto-flow:column; gap:3px; }
-.tkgrid i { background:var(--empty); transition:background-color .5s var(--ease-ui); }
+.tkgrid i { background:var(--empty); transition:background-color .5s var(--ease-ui),
+            outline-color .15s var(--ease-ui); outline:1px solid transparent; outline-offset:1px; }
+.tkgrid i:not(.pad):hover { outline-color:var(--accent); }
+
+/* 入场：按列交错。默认可见，只有确定要播时才加 .anim ——
+   动画不能是内容可见的前提（后台标签页里动画会被挂起）。 */
+@keyframes cellIn { from { opacity:0; transform:scale(.55) } }
+.tkgrid.anim i { animation:cellIn .45s var(--ease-ui) both;
+    animation-delay:calc(var(--c) * 11ms); }
+
+/* 悬浮提示：跟随光标，取代浏览器原生 title（原生的延迟久、样式不可控） */
+.tip { position:fixed; z-index:30; pointer-events:none; opacity:0;
+    background:var(--sheet); color:var(--ink); border:1px solid var(--rule-strong);
+    padding:9px 12px; font-family:'JetBrains Mono',monospace; font-size:.66rem;
+    line-height:1.8; white-space:nowrap;
+    box-shadow:0 8px 24px rgba(0,0,0,.10);
+    transition:opacity .15s var(--ease-ui); }
+.tip.on { opacity:1; }
+.tip b { display:block; font-weight:500; font-size:.78rem; color:var(--accent);
+    font-variant-numeric:tabular-nums; }
 .tkgrid i.l1 { background:color-mix(in srgb,var(--accent) 32%,transparent); }
 .tkgrid i.l2 { background:color-mix(in srgb,var(--accent) 64%,transparent); }
 .tkgrid i.l3 { background:var(--accent); }
@@ -171,8 +190,8 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
 .tkcap { margin-top:var(--s3); font-family:'JetBrains Mono',monospace;
     font-size:.6rem; line-height:1.9; color:var(--ink-faint); max-width:52em; }
 
-.tkagents { display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:var(--s4) var(--s6); margin-top:var(--s8); }
+/* 单列：7 项排 2 列必然剩一个孤儿，怎么排都不对称 */
+.tkagents { display:grid; grid-template-columns:1fr; gap:var(--s4); margin-top:var(--s8); }
 .tkagent { display:grid; grid-template-columns:1fr auto; gap:6px var(--s2); align-items:baseline; }
 .tkagent .n { font-family:'JetBrains Mono',monospace; font-size:.7rem; color:var(--ink-soft); }
 .tkagent .v { font-family:'JetBrains Mono',monospace; font-size:.64rem; color:var(--ink-faint);
@@ -221,7 +240,6 @@ dl a:hover { border-bottom-color:var(--accent); }
     section { margin-top:var(--s8); }
     .hero { margin-top:var(--s7); gap:var(--s5); }
     .tkstats { grid-template-columns:repeat(2,1fr); gap:var(--s6) var(--s4); }
-    .tkagents { grid-template-columns:1fr; }
     dl div { flex-direction:column; gap:0; }
     dl dt { width:auto; }
 }
@@ -289,8 +307,9 @@ dl a:hover { border-bottom-color:var(--accent); }
         <div class="tkagents" id="tk-agents" style="margin-top:var(--s4)"></div>
     </div>
 
-    <dl class="reveal" id="tk-note"></dl>
 </section>
+
+<div class="tip" id="tk-tip" role="status" aria-live="off"></div>
 
 <section class="col">
     <div class="label reveal">Elsewhere <span class="zh">别处</span></div>
@@ -660,7 +679,7 @@ dl a:hover { border-bottom-color:var(--accent); }
     var TK_KEY = 'tt-v1', TK_TTL = 8 * 3600 * 1000;   // 首页 8 小时刷一次即可
     var AGENT_NAME = { claude:'Claude Code', codex:'Codex', kimi:'Kimi Code',
         opencode:'opencode', dsh:'dsh', hermes:'Hermes', pi:'Pi' };
-    var tkData = null, tkView = 'daily';
+    var tkData = null, tkView = 'daily', tkAnimated = false;
 
     /* 与 TokenTrackerCore 的 MenuBarFmt.fmtTokens 逐档对齐（亿档触发点是 1e6，不是 1e8） */
     function fmtT(n) {
@@ -720,21 +739,6 @@ dl a:hover { border-bottom-color:var(--accent); }
                 '<span class="wbar"><i data-w="' + pct + '"></i></span></div>';
         }).join('') || '<span class="v">暂无数据</span>';
 
-        var share = (t.undated_share !== undefined ? t.undated_share : d.caveats.undated_share);
-        var snap = (d.caveats.snapshot_only_agents || []).map(function (x) {
-            return AGENT_NAME[x] || x; }).join('、');
-        document.getElementById('tk-note').innerHTML = [
-            ['口径', '输入 / 输出 / 缓存读 / 缓存写四项互斥求和，缓存读写计入总量'],
-            ['时区', esc(d.tz) + '，日期在本机时区切分，页面直接渲染已分好的日期'],
-            ['未定位', fmtT(t.tokens_undated) + '（' + (d.caveats.undated_share * 100).toFixed(2) +
-                '%）无法还原到具体某天，计入总量但不进热力图'],
-            ['聊天时长', '空闲超过 ' + (b ? b.gap_minutes : 30) + ' 分钟即切段，取最长一段；' +
-                (snap ? '仅统计有精确时间戳的工具，不含 ' + esc(snap) : '仅统计有精确时间戳的工具')],
-            ['更新', esc(d.generated_at.replace('T', ' ').replace('Z', ' UTC')) +
-                '，由本机 TokenTracker 上报']
-        ].map(function (r) {
-            return '<div><dt>' + r[0] + '</dt><dd>' + r[1] + '</dd></div>'; }).join('');
-
         drawMap();
 
         // observe() 只观察 .reveal:not(.in)，所以砖一旦露出过，后续重渲染
@@ -786,42 +790,53 @@ dl a:hover { border-bottom-color:var(--accent); }
         function tip(idx) {
             var day = addDays(start, idx);
             if (tkView === 'weekly') {
-                return day + ' 所在周 · ' + fmtT(weekly[((lead + idx) / 7) | 0] || 0);
+                return { d: day + ' 所在周', v: fmtT(weekly[((lead + idx) / 7) | 0] || 0) };
             }
             if (tkView === 'cumul') {
-                return '截至 ' + day + ' · 累计 ' + fmtT(run[idx]) +
-                       '（' + Math.round(run[idx] / total * 100) + '%）';
+                return { d: '截至 ' + day,
+                         v: fmtT(run[idx]) + '（' + Math.round(run[idx] / total * 100) + '%）' };
             }
-            return day + ' · ' + fmtT(days[idx]);
+            return { d: day, v: days[idx] > 0 ? fmtT(days[idx]) : '没有记录' };
         }
 
         var html = '', k;
-        for (k = 0; k < lead; k++) html += '<i class="pad"></i>';
+        for (k = 0; k < lead; k++) html += '<i class="pad" style="--c:0"></i>';
         for (i = 0; i < n; i++) {
             var lv = level(i);
-            html += '<i class="' + (lv ? 'l' + lv : '') + '" title="' + esc(tip(i)) + '"></i>';
+            // 不用原生 title：延迟久、样式不可控。改由 #tk-tip 跟随光标显示。
+            // --c 是列序号，入场动画按列交错。
+            html += '<i class="' + (lv ? 'l' + lv : '') + '" style="--c:' + (((lead + i) / 7) | 0)
+                 + '" data-d="' + esc(tip(i).d) + '" data-v="' + esc(tip(i).v) + '"></i>';
         }
-        for (k = 0; k < trail; k++) html += '<i class="pad"></i>';
+        for (k = 0; k < trail; k++) html += '<i class="pad" style="--c:' + (cols - 1) + '"></i>';
         var grid = document.getElementById('tk-grid');
         var wrap = document.getElementById('tk-scroll');
         // 先按 3px 间隙试算格子边长；塞不下就收窄间隙。仍低于 7px 说明这个宽度
         // 根本放不下整年，那就不必再缩 —— 横竖要滚动，不如给个看得清的 11px，
         // 由 .tkscroll 消化多出来的宽度。窄屏首屏加载与从宽屏缩放的结果因此一致。
+        // 列宽用 1fr 精确铺满容器（取整会在右边留下几十像素空白），
+        // 行高取同一个小数值，格子因此仍是正方形。
         var avail = wrap.clientWidth || 640, gap = 3;
-        var cell = Math.floor((avail - (cols - 1) * gap) / cols);
-        if (cell < 7) { gap = 2; cell = Math.floor((avail - (cols - 1) * gap) / cols); }
-        if (cell < 7) { gap = 3; cell = 11; }
-        cell = Math.min(14, cell);
+        var cell = (avail - (cols - 1) * gap) / cols;
+        if (cell < 7) { gap = 2; cell = (avail - (cols - 1) * gap) / cols; }
+        var fits = cell >= 7;
+        if (!fits) { gap = 3; cell = 11; }   // 塞不下就固定 11px，交给 .tkscroll 横向滚动
         grid.style.gap = gap + 'px';
-        grid.style.gridTemplateRows = 'repeat(7,' + cell + 'px)';
-        grid.style.gridAutoColumns = cell + 'px';
+        grid.style.gridTemplateRows = 'repeat(7,' + cell.toFixed(2) + 'px)';
+        grid.style.gridAutoColumns = fits ? 'minmax(0,1fr)' : cell + 'px';
         grid.innerHTML = html;
+        if (!tkAnimated && !still && !document.hidden) {
+            tkAnimated = true;
+            grid.classList.add('anim');
+            setTimeout(function () { grid.classList.remove('anim'); }, 1400);
+        }
         grid.setAttribute('aria-label', '从 ' + start + ' 到 ' + d.range.to + ' 的每日 Token 用量，共 ' +
             n + ' 天，累计 ' + fmtT(d.daily.window_tokens));
 
         var months = document.getElementById('tk-months'), mh = '', last = '';
         months.style.gap = gap + 'px';
-        months.style.gridTemplateColumns = 'repeat(' + cols + ',' + cell + 'px)';
+        months.style.gridTemplateColumns = 'repeat(' + cols + ','
+            + (fits ? 'minmax(0,1fr)' : cell + 'px') + ')';
         for (var c = 0; c < cols; c++) {
             var first = c * 7 - lead; if (first < 0) first = 0;
             var m = first < n ? addDays(start, first).slice(5, 7) : '';
@@ -842,6 +857,34 @@ dl a:hover { border-bottom-color:var(--accent); }
             ? '整列同色，一列读作一周的合计；分位在周合计上重算，回答的是「哪几周重」。'
             : '按累计量占最终总量的比例分四段：0–25% / 25–50% / 50–75% / 75–100%。带越窄说明那段时间涨得越猛。';
     }
+
+    /* 悬浮提示：整块网格挂一个监听（371 个格子逐个挂太重），
+       靠事件冒泡取 e.target 判断落在哪个格子上。
+       定位是同步做的，不走 requestAnimationFrame —— rAF 在后台标签页会被挂起，
+       那样提示会显示出来却停在左上角。mousemove 本身已被浏览器限频，
+       每次写两个样式属性的开销可以接受。 */
+    (function tooltip() {
+        var tip = document.getElementById('tk-tip');
+        var grid = document.getElementById('tk-grid');
+        if (!tip || !grid) return;
+
+        function hide() { tip.classList.remove('on'); }
+
+        grid.addEventListener('mousemove', function (e) {
+            var cell = e.target;
+            if (cell.tagName !== 'I' || !cell.dataset.d) { hide(); return; }
+            tip.innerHTML = '<b>' + esc(cell.dataset.v) + '</b>' + esc(cell.dataset.d);
+            tip.classList.add('on');
+            var r = tip.getBoundingClientRect();
+            var x = e.clientX + 14, y = e.clientY + 16;
+            if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
+            if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 16;
+            tip.style.left = Math.max(8, x) + 'px';
+            tip.style.top = Math.max(8, y) + 'px';
+        });
+        grid.addEventListener('mouseleave', hide);
+        addEventListener('scroll', hide, { passive: true });
+    })();
 
     document.getElementById('tk-views').addEventListener('click', function (e) {
         var btn = e.target.closest ? e.target.closest('button[data-view]') : null;
