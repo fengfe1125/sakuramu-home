@@ -1,0 +1,11 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+
+	// ⚠️ 这是改版预览站，和线上主站是两个独立 Worker。
+	// 主站是 restless-mountain-3c35（顶级域 sakuramu.edu.kg），千万别混。
+	"name": "sakuramu-home-v2",
+	"compatibility_date": "2026-09-08",
+	"assets": { "directory": "./v2", "not_found_handling": "none" },
+	"routes": [{ "pattern": "about.sakuramu.edu.kg", "custom_domain": true }],
+	"observability": { "enabled": true }
+}

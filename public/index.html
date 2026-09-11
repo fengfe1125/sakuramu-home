@@ -21,437 +21,253 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <style>
-/* ═════ 1. 令牌 ═════ */
+/* ═════ 1. 令牌 ═════
+   间距刻度取自 innei.in：3.5/7/14/28/35/42/56/70/105/112px（14px 根字号下的
+   0.25rem 倍数）。这里按 16px 根字号等比放大，仍是同一套比例关系。 */
 :root {
     --paper:#F4F2EA; --sheet:#FBFAF5; --ink:#1A1C16;
-    --ink-soft:rgba(26,28,22,.80); --ink-faint:rgba(26,28,22,.62);
-    --rule:rgba(26,28,22,.12); --rule-strong:rgba(26,28,22,.2);
-    --accent:#B24E33; --grid:rgba(26,28,22,.045);
-    --hover:rgba(178,78,51,.07); --chip:rgba(26,28,22,.05);
-    --empty:rgba(26,28,22,.07);
+    --ink-soft:rgba(26,28,22,.78); --ink-faint:rgba(26,28,22,.52);
+    --rule:rgba(26,28,22,.10); --rule-strong:rgba(26,28,22,.18);
+    --accent:#B24E33; --hover:rgba(178,78,51,.06); --chip:rgba(26,28,22,.045);
+    --empty:rgba(26,28,22,.06);
 
-    /* 缓动取自 devouringdetails.com 生产环境 CSS，不是凭感觉调的：
-       389.17ms 弹簧，25% 处过冲到 1.048。 */
+    --s1:4px;  --s2:8px;   --s3:16px; --s4:32px;  --s5:40px;
+    --s6:48px; --s7:64px;  --s8:80px; --s9:120px; --s10:128px;
+
+    /* 389.17ms 弹簧，25% 处过冲 1.048（devouringdetails 生产环境原值） */
     --spring:linear(0 0%, 0.013389 1%, 0.049373 2%, 0.102262 3%, 0.167133 4%, 0.239788 5%, 0.316716 6%, 0.395034 7%, 0.472432 8%, 0.547109 9%, 0.617715 10%, 0.68329 11%, 0.743204 12%, 0.797107 13%, 0.844877 14%, 0.886576 15%, 0.922409 16%, 0.952689 17%, 0.977806 18%, 0.998202 19%, 1.014346 20%, 1.026718 21%, 1.035795 22%, 1.042036 23%, 1.045879 24%, 1.04773 25%, 1.047962 26%, 1.046909 27%, 1.04487 28%, 1.042104 29%, 1.038837 30%, 1.035258 31%, 1.031524 32%, 1.027766 33%, 1.024084 34%, 1.020558 35%, 1.017245 36%, 1.014186 37%, 1.011406 38%, 1.008919 39%, 1.006726 40%, 1.004821 41%, 1.003194 42%, 1.001828 43%, 1.000702 44%, 0.999796 45%, 0.999085 46%, 0.998548 47%, 0.998162 48%, 0.997904 49%, 0.997755 50%, 0.997695 51%, 0.997707 52%, 0.997776 53%, 0.997887 54%, 0.998029 55%, 0.998192 56%, 0.998368 57%, 0.998548 58%, 0.998728 59%, 0.998903 60%, 0.999069 61%, 0.999224 62%, 0.999366 63%, 0.999495 64%, 0.99961 65%, 0.99971 66%, 0.999797 67%, 0.999871 68%, 0.999932 69%);
-    --ease-dd:cubic-bezier(.23,.88,.26,.92);
-    /* 参考站 innei.in 的默认交互过渡：0.2s cubic-bezier(.4,0,.2,1)，
-       全站 26+13 处都用它，只有少数"要弹一下"的地方换别的曲线。 */
     --ease-ui:cubic-bezier(.4,0,.2,1);
 }
 @media (prefers-color-scheme:dark) {
     :root {
         --paper:#131410; --sheet:#1A1C15; --ink:#EDEAE0;
-        --ink-soft:rgba(237,234,224,.82); --ink-faint:rgba(237,234,224,.58);
-        --rule:rgba(237,234,224,.16); --rule-strong:rgba(237,234,224,.26);
-        --accent:#E08A6C; --grid:rgba(237,234,224,.05);
-        --hover:rgba(224,138,108,.09); --chip:rgba(237,234,224,.07);
-        --empty:rgba(237,234,224,.08);
+        --ink-soft:rgba(237,234,224,.80); --ink-faint:rgba(237,234,224,.50);
+        --rule:rgba(237,234,224,.11); --rule-strong:rgba(237,234,224,.18);
+        --accent:#E08A6C; --hover:rgba(224,138,108,.08); --chip:rgba(237,234,224,.06);
+        --empty:rgba(237,234,224,.07);
     }
 }
+
 * { margin:0; padding:0; box-sizing:border-box; }
 
 body {
-    background-color:var(--paper);
-    background-image:linear-gradient(var(--grid) 1px,transparent 1px),
-                     linear-gradient(90deg,var(--grid) 1px,transparent 1px);
-    background-size:64px 64px; animation:drift 90s linear infinite;
-    color:var(--ink); font-family:'DM Sans','Noto Serif SC',-apple-system,serif;
-    line-height:1.75;
-    min-height:100dvh; display:grid; place-items:start center;
-    padding:clamp(14px,4vw,72px); -webkit-font-smoothing:antialiased;
-}
-@keyframes drift { to { background-position:64px 64px; } }
-
-.sheet { width:100%; max-width:1180px; border:1px solid var(--rule-strong); position:relative; }
-.sheet::before,.sheet::after {
-    content:''; position:absolute; width:10px; height:10px;
-    border:1px solid var(--rule-strong); border-width:1px 0 0 1px;
-}
-.sheet::before { top:-6px; left:-6px; }
-.sheet::after { bottom:-6px; right:-6px; transform:rotate(180deg); }
-
-/* ═════ 2. 平铺骨架 ═════
-   整页就是一张 12 列网格，每个元素占若干列。
-   gap:1px + 底色 = 所有分割线，线条即结构。 */
-.tiles { display:grid; grid-template-columns:repeat(12,1fr); gap:1px; background:var(--rule); }
-.tiles > * { background:var(--sheet); min-width:0; }
-
-.t-meta,.t-head,.t-contact { grid-column:span 12; }
-.t-ava   { grid-column:span 2; }
-.t-id    { grid-column:span 6; }
-.t-stats { grid-column:span 4; }
-.t-anim  { grid-column:span 2; }
-.t-quote { grid-column:span 4; }
-.t-lang  { grid-column:span 3; }
-.t-mon   { grid-column:span 3; }
-.t-work  { grid-column:span 6; }
-.t-link  { grid-column:span 3; }
-.t-colo  { grid-column:span 6; }
-.t-soon  { grid-column:span 3; }
-.t-tkstat  { grid-column:span 4; }
-.t-tkmap   { grid-column:span 8; }
-.t-tkagent { grid-column:span 4; }
-.t-tknote  { grid-column:span 8; }
-
-@media (max-width:1000px) {
-    .tiles { grid-template-columns:repeat(6,1fr); }
-    .t-meta,.t-head,.t-contact,.t-stats,.t-colo { grid-column:span 6; }
-    .t-ava { grid-column:span 2; }
-    .t-id  { grid-column:span 4; }
-    .t-anim { grid-column:span 2; }
-    .t-quote { grid-column:span 4; }
-    .t-lang,.t-mon,.t-work,.t-link,.t-soon { grid-column:span 3; }
-    .t-tkstat,.t-tkmap,.t-tkagent,.t-tknote { grid-column:span 6; }
-}
-@media (max-width:600px) {
-    .tiles { grid-template-columns:1fr; }
-    .tiles > * { grid-column:span 1 !important; }
+    background:var(--paper); color:var(--ink);
+    font-family:'DM Sans','Noto Serif SC',-apple-system,serif;
+    font-size:16px; line-height:1.9;
+    -webkit-font-smoothing:antialiased;
 }
 
-/* ═════ 3. 动画 ═════ */
-/* 揭示只做 blur + 透明度，不做位移 —— 位移会让整页"抖"一下，
-   而纯 blur 的注意力落在内容本身。参数同原站：blur(6px)→0，.75s ease。 */
-/* transition 必须写在这一条里：.js .reveal 的特异性 (0,2,0) 会整条盖掉
-   .t-work / .t-link 上的 transition (0,1,0)，分开写等于白写。 */
-.js .reveal { opacity:0; filter:blur(6px);
-    transition:opacity .75s ease,filter .75s ease,
-               background-color .2s var(--ease-ui),scale .389s var(--spring); }
-.js .reveal.in { opacity:1; filter:blur(0); }
+/* ═════ 2. 骨架：居中单栏，靠留白分段而不是靠线 ═════ */
+.page { max-width:1120px; margin:0 auto; padding:var(--s7) var(--s5) var(--s10); }
+.col  { max-width:760px; }
+section { margin-top:var(--s9); }
 
-/* 逐词揭示：45ms 交错，同样无位移 */
-@keyframes fadeInBlur { to { opacity:1; filter:blur(0); } }
-/* 默认可见。只有确定要播动画时才加 .pre 把起点压成模糊 ——
-   否则后台标签页里动画被挂起，标题会整个看不见。 */
-.w { display:inline-block; }
-.pre .w { opacity:0; filter:blur(6px); }
-.pre.lit .w { animation:fadeInBlur .75s ease both; animation-delay:calc(var(--i) * 45ms); }
+/* 版块标签：小号等宽大写，和衬线正文拉开层级 */
+.label {
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:400;
+    letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint);
+    display:flex; align-items:baseline; gap:var(--s3); margin-bottom:var(--s5);
+}
+.label::after { content:''; flex:1; height:1px; background:var(--rule); }
+.label .zh { font-family:'Noto Serif SC',serif; font-size:.8rem;
+    letter-spacing:0; text-transform:none; }
 
-/* 按压回弹用真实弹簧；砖很大，过冲幅度按比例收到 .985 */
-.t-work:active,.t-link:active,.t-contact:active { scale:.985; }
+/* ═════ 3. 顶栏 ═════ */
+.top { display:flex; align-items:baseline; justify-content:space-between;
+    gap:var(--s4); flex-wrap:wrap;
+    font-family:'JetBrains Mono',monospace; font-size:11.5px;
+    letter-spacing:.04em; color:var(--ink-faint); }
+.top a { color:inherit; text-decoration:none; border-bottom:1px solid transparent;
+    transition:color .2s var(--ease-ui),border-color .2s var(--ease-ui); }
+.top a:hover { color:var(--accent); border-bottom-color:var(--accent); }
+.top nav { display:flex; gap:var(--s4); }
+.caret { display:inline-block; width:6px; height:1em; margin-left:4px;
+    background:var(--accent); vertical-align:-2px; animation:blink 1.2s steps(2) infinite; }
+@keyframes blink { 50% { opacity:0 } }
 
-/* 每块砖统一的内边距 */
-/* 间距刻度取自参考站：3.5 / 7 / 14 / 28 / 35 / 42 / 56 / 70px，
-   即 14px 根字号下的 0.25rem 倍数。这里取 2rem→4rem 段。 */
-.pad { padding:clamp(28px,3.6vw,56px); }
-
-/* ═════ 4. 顶栏 ═════ */
-.t-meta { display:flex; justify-content:space-between; align-items:center; gap:12px;
-    padding:24px clamp(28px,3.6vw,56px);
-    font-family:'JetBrains Mono',monospace; font-size:11px;
-    letter-spacing:.06em; color:var(--ink-faint); }
-.t-meta strong { font-weight:500; color:var(--ink-soft); }
-.caret { display:inline-block; width:7px; height:1em; background:var(--accent);
-    vertical-align:-2px; margin-left:3px; animation:blink 1.15s steps(1) infinite; }
-@keyframes blink { 0%,55%{opacity:1} 56%,100%{opacity:0} }
-
-/* ═════ 5. 头像砖：整块满铺 ═════ */
-.t-ava { position:relative; overflow:hidden; }
-.t-ava img { width:100%; height:100%; min-height:150px; object-fit:cover; display:block;
-    transition:transform .5s; }
-.t-ava:hover img { transform:scale(1.03); }
-/* 角标 */
-.t-ava::before,.t-ava::after { content:''; position:absolute; width:12px; height:12px;
-    border:1px solid var(--accent); pointer-events:none; z-index:1; }
-.t-ava::before { top:8px; left:8px; border-width:1px 0 0 1px; }
-.t-ava::after { bottom:8px; right:8px; border-width:0 1px 1px 0; }
-
-/* ═════ 5b. 动效砖：四维超立方体线框 ═════ */
-.t-anim { position:relative; overflow:hidden; min-height:150px; }
-.t-anim canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
-/* 与头像呼应的角标 */
-.t-anim::before,.t-anim::after { content:''; position:absolute; width:12px; height:12px;
-    border:1px solid var(--rule-strong); pointer-events:none; z-index:1; }
-.t-anim::before { top:8px; left:8px; border-width:1px 0 0 1px; }
-.t-anim::after { bottom:8px; right:8px; border-width:0 1px 1px 0; }
-
-/* ═════ 6. 身份砖 ═════ */
-.t-id { display:flex; flex-direction:column; justify-content:center; }
-/* 入场交给逐字 blur 揭示（见 .pre .w）。原来的 risein 用 backwards 填充，
-   起始态是 opacity:0 —— 后台标签页里动画被挂起，标题就一直不可见；
-   它带的 translateY 也正是参考站刻意不做的位移。 */
-/* 中文衬线 + 字重 400。参考站 342 处用 400、仅 39 处用 500，几乎不用粗体——
-   份量靠字号和留白给，不靠加粗。 */
+/* ═════ 4. 主视觉：靠上方 120px 留白给份量，不靠字号堆 ═════ */
+.hero { margin-top:var(--s9); display:flex; gap:var(--s6); align-items:flex-start; flex-wrap:wrap; }
+.hero img { width:104px; height:104px; object-fit:cover; flex-shrink:0; }
+.hero .who { flex:1; min-width:260px; }
 h1 { font-family:'Noto Serif SC',serif; font-weight:400;
-    font-size:clamp(2.6rem,5.4vw,3.8rem); letter-spacing:-.02em; line-height:1.15; }
-.handle { font-family:'JetBrains Mono',monospace; font-size:.76rem;
-    color:var(--ink-faint); margin-top:8px; letter-spacing:.03em; }
-.status { display:none; align-items:center; gap:7px; margin-top:14px; align-self:flex-start;
-    padding:6px 12px; border:1px solid var(--rule-strong); border-radius:999px;
-    font-size:.78rem; color:var(--ink-soft); max-width:100%; }
+    font-size:clamp(2.8rem,6.4vw,4.4rem); line-height:1.12; letter-spacing:-.02em; }
+.handle { font-family:'JetBrains Mono',monospace; font-size:.78rem;
+    color:var(--ink-faint); margin-top:var(--s3); letter-spacing:.04em; }
+.lede { font-size:1.12rem; color:var(--ink-soft); margin-top:var(--s5); max-width:34em; }
+.status { display:none; align-items:center; gap:8px; margin-top:var(--s4);
+    font-size:.88rem; color:var(--ink-soft); }
 .status.on { display:inline-flex; }
-.status .e { font-size:.92rem; line-height:1; }
-.status .m { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#fx { width:100%; height:132px; display:block; margin-top:var(--s6); opacity:.85; }
 
-/* ═════ 7. 统计：砖中砖 2×2 ═════ */
-.t-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:var(--rule); }
-.stat { background:var(--sheet); padding:42px 14px; text-align:center;
-    display:flex; flex-direction:column; justify-content:center; }
-.stat b { display:block; font-family:'Noto Serif SC',serif;
-    font-size:clamp(1.4rem,2.8vw,1.9rem); font-weight:500; letter-spacing:-.02em;
-    line-height:1; font-variant-numeric:tabular-nums; }
-.stat span { display:block; margin-top:6px; font-family:'JetBrains Mono',monospace;
-    font-size:.6rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); }
-@media (max-width:1000px) { .t-stats { grid-template-columns:repeat(4,1fr); } }
-@media (max-width:600px)  { .t-stats { grid-template-columns:repeat(2,1fr); } }
+/* ═════ 5. 作品：极简列表，发丝线分隔 ═════ */
+.work { display:block; padding:var(--s5) 0; border-top:1px solid var(--rule);
+    text-decoration:none; color:inherit;
+    transition:background-color .2s var(--ease-ui),scale .389s var(--spring); }
+.work:hover { background:var(--hover); }
+.work:active { scale:.995; }
+.wtop { display:flex; align-items:baseline; gap:var(--s3); flex-wrap:wrap; }
+.wname { font-family:'Noto Serif SC',serif; font-size:1.24rem; font-weight:400; }
+.wmeta { margin-left:auto; display:flex; align-items:center; gap:var(--s3);
+    font-family:'JetBrains Mono',monospace; font-size:.64rem; color:var(--ink-faint); }
+.sq { width:7px; height:7px; flex-shrink:0; display:inline-block; margin-right:5px; }
+.wdesc { font-size:.95rem; line-height:1.95; color:var(--ink-soft);
+    margin-top:var(--s2); max-width:56em; }
+.tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:var(--s3); }
+.tags b { font-family:'JetBrains Mono',monospace; font-weight:400; font-size:.6rem;
+    padding:3px 8px; background:var(--chip); color:var(--ink-faint); }
+.go { color:var(--ink-faint); transition:transform .2s var(--ease-ui),color .2s var(--ease-ui); }
+.work:hover .go { color:var(--accent); transform:translate(3px,-3px); }
 
-/* ═════ 8. 引言砖 ═════ */
-.t-quote { display:flex; flex-direction:column; justify-content:center; }
-.t-quote em { display:block; font-style:normal; font-size:1.25rem; font-weight:400;
-    letter-spacing:-.01em; margin-bottom:8px; }
-.t-quote small { font-family:'JetBrains Mono',monospace; font-size:.72rem;
-    color:var(--ink-faint); line-height:1.75; }
-.eyebrow { display:flex; align-items:center; gap:10px; margin-bottom:14px;
-    font-family:'JetBrains Mono',monospace; font-size:10px;
-    letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint); }
-.eyebrow::before { content:''; width:22px; height:1px; background:var(--accent); flex-shrink:0;
-    transform-origin:left; animation:draw .8s .1s cubic-bezier(.2,.7,.3,1) backwards; }
-@keyframes draw { from{transform:scaleX(0)} }
+/* ═════ 6. 外链：一行文字链，不做卡片 ═════ */
+.links { display:flex; flex-wrap:wrap; gap:var(--s3) var(--s6); }
+.links a { display:inline-flex; align-items:center; gap:10px; text-decoration:none;
+    color:inherit; padding:var(--s2) 0;
+    transition:color .2s var(--ease-ui),scale .389s var(--spring); }
+.links a:hover { color:var(--accent); }
+.links a:active { scale:.97; }
+.links svg { width:17px; height:17px; fill:currentColor; opacity:.7; }
+.links .t { font-size:.95rem; }
+.links .h { font-family:'JetBrains Mono',monospace; font-size:.64rem; color:var(--ink-faint); }
 
-/* ═════ 9. 可视化砖 ═════ */
-.vh { font-family:'JetBrains Mono',monospace; font-weight:400; font-size:10px;
-    letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:13px; }
+/* ═════ 7. Token 统计 ═════ */
+.tkstats { display:grid; grid-template-columns:repeat(3,1fr);
+    gap:var(--s7) var(--s5); margin-bottom:var(--s8); }
+.stat b { display:block; font-family:'Noto Serif SC',serif; font-weight:400;
+    font-size:clamp(1.7rem,3.4vw,2.4rem); line-height:1.1;
+    letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.stat span { display:block; margin-top:10px; font-family:'JetBrains Mono',monospace;
+    font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); }
 
-/* 每个仓库一个方块，按语言着色 */
-.squares { display:grid; grid-template-columns:repeat(auto-fill,minmax(0,1fr));
-    grid-auto-rows:1fr; gap:4px; }
-.squares i { aspect-ratio:1; display:block; opacity:0; transform:scale(.5);
-    transition:opacity .45s,transform .45s; }
-.squares i.on { opacity:1; transform:none; }
-.legend { display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:14px; }
-.legend span { display:inline-flex; align-items:center; gap:6px;
-    font-family:'JetBrains Mono',monospace; font-size:.66rem; color:var(--ink-faint); }
-.sq { width:8px; height:8px; flex-shrink:0; }
-
-/* 近 12 个月：方块条 */
-.months { display:grid; grid-template-columns:repeat(6,1fr); gap:4px; }
-.months i { aspect-ratio:1; background:var(--empty);
-    transition:background-color .5s; }
-.months i.l1 { background:color-mix(in srgb,var(--accent) 32%,transparent); }
-.months i.l2 { background:color-mix(in srgb,var(--accent) 64%,transparent); }
-.months i.l3 { background:var(--accent); }
-.mlabel { display:flex; justify-content:space-between; margin-top:9px;
-    font-family:'JetBrains Mono',monospace; font-size:.6rem; color:var(--ink-faint); }
-
-/* ═════ 9b. Token 统计 ═════
-   数字砖沿用 .stat 的砖中砖；热力图沿用 .months 的三级色阶，
-   grid-auto-flow:column + 7 行让按日排列的 DOM 自动成为周列，无需索引运算。 */
-.t-tkstat { display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:var(--rule); }
-.t-tkstat .stat b { font-size:clamp(1.15rem,2.2vw,1.55rem); }
-/* 断点必须写在基础规则之后：两者同为单类选择器，靠源码顺序决胜负 */
-@media (max-width:1000px) { .t-tkstat { grid-template-columns:repeat(3,1fr); } }
-@media (max-width:600px)  { .t-tkstat { grid-template-columns:repeat(2,1fr); } }
-
-.tkhead { display:flex; align-items:baseline; gap:10px; margin-bottom:13px; }
-.tkhead .vh { margin-bottom:0; }
-.tkviews { margin-left:auto; display:flex; gap:4px; }
-.tkviews button { font-family:'JetBrains Mono',monospace; font-weight:400; font-size:.6rem;
-    padding:3px 6px; background:var(--chip); color:var(--ink-faint); letter-spacing:.03em;
-    border:0; border-bottom:1px solid transparent; cursor:pointer; }
+.tkhead { display:flex; align-items:baseline; gap:var(--s3); margin-bottom:var(--s4); }
+.vh { font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--ink-faint); }
+.tkviews { margin-left:auto; display:flex; gap:var(--s1); }
+.tkviews button { font-family:'JetBrains Mono',monospace; font-size:.62rem;
+    padding:4px 9px; background:none; color:var(--ink-faint); letter-spacing:.04em;
+    border:0; border-bottom:1px solid transparent; cursor:pointer;
+    transition:color .2s var(--ease-ui),border-color .2s var(--ease-ui); }
 .tkviews button:hover { color:var(--ink-soft); }
 .tkviews button[aria-selected="true"] { color:var(--accent); border-bottom-color:var(--accent); }
 
-/* 行高、列宽与间隙都由 JS 按可用宽度算出（见 drawMap）：
-   1fr + aspect-ratio 在列数少时会把格子撑到上百像素，必须给确定的像素尺寸；
-   而 53 列在窄屏上光间隙就占掉半个砖，所以塞不下时由 .tkscroll 自己横向滚动，
-   绝不让整页出现横向滚动条。 */
+/* 行高、列宽、间隙由 JS 按可用宽度算（见 drawMap）；
+   塞不下时 .tkscroll 自己横向滚动，整页绝不出现横向滚动条。 */
 .tkscroll { overflow-x:auto; overflow-y:hidden; }
 .tkgrid { display:grid; grid-auto-flow:column; gap:3px; }
-.tkgrid i { background:var(--empty); transition:background-color .5s; }
+.tkgrid i { background:var(--empty); transition:background-color .5s var(--ease-ui); }
 .tkgrid i.l1 { background:color-mix(in srgb,var(--accent) 32%,transparent); }
 .tkgrid i.l2 { background:color-mix(in srgb,var(--accent) 64%,transparent); }
 .tkgrid i.l3 { background:var(--accent); }
 .tkgrid i.pad { visibility:hidden; }
-.tkmonths { display:grid; gap:3px; margin-top:7px; overflow:hidden;
+.tkmonths { display:grid; gap:3px; margin-top:9px; overflow:hidden;
     font-family:'JetBrains Mono',monospace; font-size:.58rem; color:var(--ink-faint); }
 .tkmonths span { white-space:nowrap; }
-.tkfoot { display:flex; align-items:center; gap:8px; margin-top:11px;
-    font-family:'JetBrains Mono',monospace; font-size:.6rem; color:var(--ink-faint); }
+.tkfoot { display:flex; align-items:center; gap:var(--s2); margin-top:var(--s3);
+    font-family:'JetBrains Mono',monospace; font-size:.62rem; color:var(--ink-faint); }
 .tkscale { display:flex; align-items:center; gap:3px; margin-left:auto; }
 .tkscale i { width:9px; height:9px; background:var(--empty); }
 .tkscale i.l1 { background:color-mix(in srgb,var(--accent) 32%,transparent); }
 .tkscale i.l2 { background:color-mix(in srgb,var(--accent) 64%,transparent); }
 .tkscale i.l3 { background:var(--accent); }
-.tkcap { margin-top:8px; font-family:'JetBrains Mono',monospace; font-size:.58rem;
-    line-height:1.7; color:var(--ink-faint); }
+.tkcap { margin-top:var(--s3); font-family:'JetBrains Mono',monospace;
+    font-size:.6rem; line-height:1.9; color:var(--ink-faint); max-width:52em; }
 
-.tkagents { display:flex; flex-direction:column; gap:9px; }
-.tkagent { display:grid; grid-template-columns:1fr auto; gap:3px 8px; align-items:baseline; }
-.tkagent .n { font-family:'JetBrains Mono',monospace; font-size:.66rem; color:var(--ink-soft); }
-.tkagent .v { font-family:'JetBrains Mono',monospace; font-size:.6rem; color:var(--ink-faint);
+.tkagents { display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:var(--s4) var(--s6); margin-top:var(--s8); }
+.tkagent { display:grid; grid-template-columns:1fr auto; gap:6px var(--s2); align-items:baseline; }
+.tkagent .n { font-family:'JetBrains Mono',monospace; font-size:.7rem; color:var(--ink-soft); }
+.tkagent .v { font-family:'JetBrains Mono',monospace; font-size:.64rem; color:var(--ink-faint);
     font-variant-numeric:tabular-nums; }
-.tkagent .wbar { grid-column:1 / -1; }
-
-/* ═════ 10. 版块标题条 ═════ */
-.t-head { display:flex; align-items:baseline; gap:11px;
-    padding:42px clamp(28px,3.6vw,56px);
-    font-family:'JetBrains Mono',monospace; font-size:10.5px;
-    letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint); }
-.t-head b { color:var(--accent); font-weight:500; }
-.t-head .zh { margin-left:auto; font-family:'Noto Serif SC',serif;
-    font-size:.76rem; letter-spacing:0; text-transform:none; }
-.t-head .n { font-family:'JetBrains Mono',monospace; font-size:.64rem; }
-
-/* ═════ 11. 项目砖 ═════ */
-.t-work { display:flex; flex-direction:column; text-decoration:none; color:inherit;
-    position:relative; transition:background-color .25s; }
-.t-work:hover { background:var(--hover); }
-.t-work .no { position:absolute; top:13px; right:15px;
-    font-family:'JetBrains Mono',monospace; font-size:.6rem; color:var(--ink-faint); }
-.wtop { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:9px; padding-right:26px; }
-.wname { font-size:1.02rem; font-weight:500; letter-spacing:-.01em; }
-.wlang,.wstar { display:inline-flex; align-items:center; gap:5px;
-    font-family:'JetBrains Mono',monospace; font-size:.64rem; color:var(--ink-faint); }
-.wdesc { font-size:.85rem; line-height:1.95; color:var(--ink-soft); margin-bottom:16px; }
-.tags { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:12px; }
-.tags b { font-family:'JetBrains Mono',monospace; font-weight:400; font-size:.6rem;
-    padding:3px 6px; background:var(--chip); color:var(--ink-faint); letter-spacing:.03em; }
-.wfoot { display:flex; align-items:center; gap:9px; margin-top:auto;
-    font-family:'JetBrains Mono',monospace; font-size:.6rem; color:var(--ink-faint); }
-.wbar { flex:1; height:2px; background:var(--rule); position:relative; }
+.wbar { grid-column:1 / -1; height:2px; background:var(--rule); position:relative; }
 .wbar i { position:absolute; inset:0 auto 0 0; width:0;
     background:color-mix(in srgb,var(--accent) 55%,transparent);
     transition:width .9s cubic-bezier(.2,.7,.3,1); }
-.go { display:inline-block; transition:transform .25s,color .25s; }
-.t-work:hover .go { color:var(--accent); transform:translate(3px,-3px); }
 
-/* ═════ 12. 外链砖 ═════ */
-.t-link { display:flex; flex-direction:column; gap:10px; text-decoration:none;
-    color:inherit; transition:background-color .25s; }
-.t-link:hover { background:var(--hover); }
-.t-link svg { width:20px; height:20px; fill:var(--ink-soft); transition:fill .25s,transform .25s; }
-.t-link:hover svg { fill:var(--accent); transform:translateY(-2px); }
-.t-link .t { font-size:.84rem; font-weight:500; }
-.t-link .h { font-family:'JetBrains Mono',monospace; font-size:.62rem;
-    color:var(--ink-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* ═════ 8. 定义列表（口径 / 本站）═════ */
+dl { font-family:'JetBrains Mono',monospace; font-size:.72rem; line-height:2.1;
+    margin-top:var(--s5); }
+dl div { display:flex; gap:var(--s4); }
+dl dt { color:var(--ink-faint); width:76px; flex-shrink:0; }
+dl dd { color:var(--ink-soft); max-width:52em; }
+dl a { color:var(--accent); text-decoration:none;
+    border-bottom:1px solid transparent; transition:border-color .2s var(--ease-ui); }
+dl a:hover { border-bottom-color:var(--accent); }
 
-/* ═════ 13. 本站 / 待建 / 联系 ═════ */
-.t-colo,.t-tknote { font-family:'JetBrains Mono',monospace; font-size:.71rem; line-height:2; }
-.t-colo div,.t-tknote div { display:flex; gap:12px; }
-.t-colo dt,.t-tknote dt { color:var(--ink-faint); width:64px; flex-shrink:0; }
-.t-colo dd,.t-tknote dd { color:var(--ink-soft); }
-.t-colo a { color:var(--accent); text-decoration:none; border-bottom:1px solid transparent; }
-.t-colo a:hover { border-bottom-color:var(--accent); }
+/* ═════ 9. 页脚 ═════ */
+.foot { margin-top:var(--s10); padding-top:var(--s6); border-top:1px solid var(--rule);
+    display:flex; align-items:baseline; justify-content:space-between; gap:var(--s4);
+    flex-wrap:wrap; }
+.foot .k { font-family:'JetBrains Mono',monospace; font-size:.62rem;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint); }
+.foot a { font-family:'JetBrains Mono',monospace; font-size:.86rem;
+    color:var(--accent); text-decoration:none;
+    border-bottom:1px solid transparent; transition:border-color .2s var(--ease-ui); }
+.foot a:hover { border-bottom-color:var(--accent); }
 
-.t-soon { display:flex; flex-direction:column; justify-content:center; gap:5px; cursor:default; }
-.t-soon .label { font-size:.92rem; color:var(--ink-faint); }
-.t-soon .en { font-family:'JetBrains Mono',monospace; font-size:.62rem;
-    letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); }
-.t-soon .tail { font-family:'JetBrains Mono',monospace; font-size:.62rem;
-    color:var(--ink-faint); margin-top:4px; }
+/* ═════ 10. 揭示动画 ═════
+   只做 blur + 透明度，不做位移（位移会让整页滚动时抖一下）。
+   参数同 devouringdetails：blur(6px)→0，.75s ease。 */
+.js .reveal { opacity:0; filter:blur(6px);
+    transition:opacity .75s ease,filter .75s ease,
+               background-color .2s var(--ease-ui),scale .389s var(--spring); }
+.js .reveal.in { opacity:1; filter:blur(0); }
 
-.t-contact { display:flex; align-items:center; justify-content:space-between; gap:14px;
-    padding:42px clamp(28px,3.6vw,56px); text-decoration:none; color:inherit;
-    transition:background-color .25s; }
-.t-contact:hover { background:var(--hover); }
-.t-contact .k { font-family:'JetBrains Mono',monospace; font-size:.63rem;
-    letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); }
-.t-contact .v { font-family:'JetBrains Mono',monospace; font-size:.76rem;
-    color:var(--accent); word-break:break-all; }
+@keyframes fadeInBlur { to { opacity:1; filter:blur(0); } }
+.w { display:inline-block; }
+.pre .w { opacity:0; filter:blur(6px); }
+.pre.lit .w { animation:fadeInBlur .75s ease both; animation-delay:calc(var(--i) * 45ms); }
 
-@media (max-width:600px) {
-    body { padding:8px; background-size:44px 44px; }
-    /* 单列下头像若按 1:1 铺满整宽会有 375px 高，太占屏，改为定高裁切 */
-    .t-ava img { height:200px; min-height:0; object-position:center 30%; }
-    .t-head .zh { margin-left:0; }
-    .t-contact { flex-direction:column; align-items:flex-start; gap:4px; }
+@media (max-width:900px) {
+    .page { padding:var(--s5) var(--s4) var(--s8); }
+    section { margin-top:var(--s8); }
+    .hero { margin-top:var(--s7); gap:var(--s5); }
+    .tkstats { grid-template-columns:repeat(2,1fr); gap:var(--s6) var(--s4); }
+    .tkagents { grid-template-columns:1fr; }
+    dl div { flex-direction:column; gap:0; }
+    dl dt { width:auto; }
 }
 
-/* ═════ 14. 减少动态效果 ═════ */
 @media (prefers-reduced-motion:reduce) {
     *,*::before,*::after { animation:none !important; transition:none !important; }
-    .js .reveal { opacity:1 !important; transform:none !important; filter:none !important; }
-    .squares i { opacity:1 !important; transform:none !important; }
+    .js .reveal { opacity:1 !important; filter:none !important; }
     .pre .w { opacity:1 !important; filter:none !important; animation:none !important; }
-    .t-work:active,.t-link:active,.t-contact:active { scale:1 !important; }
+    .work:active,.links a:active { scale:1 !important; }
 }
 </style>
 </head>
 <body>
+<div class="page">
 
-<main class="sheet">
-<div class="tiles">
+<header class="top">
+    <a href="mailto:su@sakuramu.edu.kg">su@sakuramu.edu.kg<i class="caret"></i></a>
+    <nav>
+        <a href="https://about.sakuramu.edu.kg">关于我</a>
+        <a href="https://github.com/fengfe1125" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+</header>
 
-    <div class="t-meta">
-        <strong>su@sakuramu.edu.kg<i class="caret"></i></strong>
-        <span>01 / HOME</span>
-    </div>
-
-    <div class="t-ava"><img src="/avatar.jpg" alt="沐枫的头像" loading="eager"></div>
-
-    <div class="t-id pad">
+<div class="hero">
+    <img src="/avatar.jpg" alt="沐枫的头像" loading="eager">
+    <div class="who">
         <h1>沐枫</h1>
         <div class="handle">@fengfe1125 · mufeng</div>
+        <p class="lede">写 macOS 菜单栏工具、本地开发工具与 Python 自动化脚本。<em>Dare to think.</em></p>
         <div class="status" id="status"><span class="e"></span><span class="m"></span></div>
     </div>
+</div>
 
-    <div class="t-stats">
-        <div class="stat"><b data-count="10">0</b><span>Repos</span></div>
-        <div class="stat"><b data-count="5">0</b><span>Langs</span></div>
-        <div class="stat"><b data-count="3">0</b><span>Stars</span></div>
-        <div class="stat"><b data-count="2023">0</b><span>Since</span></div>
-    </div>
+<canvas id="fx" aria-hidden="true"></canvas>
 
-    <div class="t-anim"><canvas id="fx" aria-hidden="true"></canvas></div>
+<section class="col">
+    <div class="label reveal">Works <span class="n"></span><span class="zh">作品</span></div>
+    <!-- 项目由脚本插入到这里之前 -->
+    <div id="works-end" hidden></div>
+</section>
 
-    <div class="t-quote pad">
-        <div class="eyebrow">新手开发者 · 求知 · 探索</div>
-        <em>Dare to think.</em>
-        <small>写 macOS 菜单栏工具、本地开发工具与 Python 自动化脚本</small>
-    </div>
+<section>
+    <div class="label reveal">Tokens <span class="zh">用量</span></div>
+    <div class="tkstats reveal" id="tk-stats"></div>
 
-    <div class="t-lang pad">
-        <div class="vh">语言分布 · 每格一个仓库</div>
-        <div class="squares" id="squares"></div>
-        <div class="legend" id="legend"></div>
-    </div>
-
-    <div class="t-mon pad">
-        <div class="vh">近 12 个月项目更新</div>
-        <div class="months" id="months"></div>
-        <div class="mlabel"><span id="m-from"></span><span id="m-to"></span></div>
-    </div>
-
-    <div class="t-head reveal"><b>02</b> / Works <span class="n"></span><span class="zh">我的作品</span></div>
-    <!-- 项目砖由脚本插入到这里之前 -->
-    <div class="t-head reveal" id="works-end" style="display:none"></div>
-
-    <div class="t-head reveal"><b>03</b> / Elsewhere <span class="zh">别处</span></div>
-
-    <a class="t-link pad reveal" href="https://github.com/fengfe1125" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-        <span class="t">GitHub</span><span class="h">@fengfe1125</span></a>
-    <a class="t-link pad reveal" href="https://x.com/Answerudp" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
-        <span class="t">X</span><span class="h">@Answerudp</span></a>
-    <a class="t-link pad reveal" href="https://t.me/+u6L-BJNTza4xYThl" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-        <span class="t">Telegram</span><span class="h">群组邀请</span></a>
-    <a class="t-link pad reveal" href="https://space.bilibili.com/329868551" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.813 4.653h.854c1.51.054 2.769.578 3.773 1.574 1.004.995 1.524 2.249 1.56 3.76v7.36c-.036 1.51-.556 2.769-1.56 3.773s-2.262 1.524-3.773 1.56H5.333c-1.51-.036-2.769-.556-3.773-1.56S.036 18.858 0 17.347v-7.36c.036-1.511.556-2.765 1.56-3.76 1.004-.996 2.262-1.52 3.773-1.574h.774l-1.174-1.12a1.234 1.234 0 0 1-.373-.906c0-.356.124-.658.373-.907l.027-.027c.267-.249.573-.373.92-.373.347 0 .653.124.92.373L9.653 4.44c.071.071.134.142.187.213h4.267a.836.836 0 0 1 .16-.213l2.853-2.747c.267-.249.573-.373.92-.373.347 0 .662.151.929.4.267.249.391.551.391.907 0 .355-.124.657-.373.906zM5.333 7.24c-.746.018-1.373.276-1.88.773-.506.498-.769 1.13-.786 1.894v7.52c.017.764.28 1.395.786 1.893.507.498 1.134.756 1.88.773h13.334c.746-.017 1.373-.275 1.88-.773.506-.498.769-1.129.786-1.893v-7.52c-.017-.765-.28-1.396-.786-1.894-.507-.497-1.134-.755-1.88-.773zM8 11.107c.373 0 .684.124.933.373.25.249.383.569.4.96v1.173c-.017.391-.15.711-.4.96-.249.25-.56.374-.933.374s-.684-.125-.933-.374c-.25-.249-.383-.569-.4-.96V12.44c0-.373.129-.689.386-.947.258-.257.574-.386.947-.386zm8 0c.373 0 .684.124.933.373.25.249.383.569.4.96v1.173c-.017.391-.15.711-.4.96-.249.25-.56.374-.933.374s-.684-.125-.933-.374c-.25-.249-.383-.569-.4-.96V12.44c.017-.391.15-.711.4-.96.249-.249.56-.373.933-.373Z"/></svg>
-        <span class="t">Bilibili</span><span class="h">329868551</span></a>
-
-    <div class="t-head reveal"><b>04</b> / Colophon <span class="zh">本站</span></div>
-
-    <dl class="t-colo pad reveal">
-        <div><dt>托管</dt><dd>Cloudflare Workers · Static Assets</dd></div>
-        <div><dt>构建</dt><dd>无框架、无构建步骤，单个 HTML 文件</dd></div>
-        <div><dt>数据</dt><dd>项目信息来自 GitHub API，部署时烧录快照兜底</dd></div>
-        <div><dt>字体</dt><dd>DM Sans · Noto Serif SC · JetBrains Mono</dd></div>
-        <div><dt>源码</dt><dd><a href="https://github.com/fengfe1125/sakuramu-home" target="_blank" rel="noopener">fengfe1125/sakuramu-home</a></dd></div>
-    </dl>
-
-    <div class="t-soon pad reveal">
-        <span class="label">关于我</span><span class="en">About</span><span class="tail">敬请期待</span>
-    </div>
-    <div class="t-soon pad reveal">
-        <span class="label">朋友们</span><span class="en">Friends</span><span class="tail">敬请期待</span>
-    </div>
-
-    <div class="t-head reveal"><b>05</b> / Tokens <span class="zh">用量</span></div>
-
-    <div class="t-tkstat reveal" id="tk-stats"></div>
-
-    <div class="t-tkmap pad reveal">
+    <div class="reveal">
         <div class="tkhead">
             <div class="vh">Token 活动</div>
             <div class="tkviews" id="tk-views" role="tablist" aria-label="热力图视图">
@@ -468,20 +284,49 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
         <div class="tkcap" id="tk-cap"></div>
     </div>
 
-    <div class="t-tkagent pad reveal">
-        <div class="vh">按 Agent 分布</div>
-        <div class="tkagents" id="tk-agents"></div>
+    <div class="reveal">
+        <div class="vh" style="margin-top:var(--s8)">按 Agent 分布</div>
+        <div class="tkagents" id="tk-agents" style="margin-top:var(--s4)"></div>
     </div>
 
-    <dl class="t-tknote pad reveal" id="tk-note"></dl>
+    <dl class="reveal" id="tk-note"></dl>
+</section>
 
-    <a class="t-contact reveal" href="mailto:su@sakuramu.edu.kg">
-        <span class="k">Get in touch</span><span class="v">su@sakuramu.edu.kg</span>
-    </a>
+<section class="col">
+    <div class="label reveal">Elsewhere <span class="zh">别处</span></div>
+    <div class="links reveal">
+        <a href="https://github.com/fengfe1125" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+            <span class="t">GitHub</span><span class="h">@fengfe1125</span></a>
+        <a href="https://x.com/Answerudp" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
+            <span class="t">X</span><span class="h">@Answerudp</span></a>
+        <a href="https://t.me/+u6L-BJNTza4xYThl" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+            <span class="t">Telegram</span><span class="h">群组</span></a>
+        <a href="https://space.bilibili.com/329868551" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.813 4.653h.854c1.51.054 2.769.578 3.773 1.574 1.004.995 1.524 2.249 1.56 3.76v7.36c-.036 1.51-.556 2.769-1.56 3.773s-2.262 1.524-3.773 1.56H5.333c-1.51-.036-2.769-.556-3.773-1.56S.036 18.858 0 17.347v-7.36c.036-1.511.556-2.765 1.56-3.76 1.004-.996 2.262-1.52 3.773-1.574h.774l-1.174-1.12a1.234 1.234 0 0 1-.373-.906c0-.356.124-.658.373-.907l.027-.027c.267-.249.573-.373.92-.373.347 0 .653.124.92.373L9.653 4.44c.071.071.134.142.187.213h4.267a.836.836 0 0 1 .16-.213l2.853-2.747c.267-.249.573-.373.92-.373.347 0 .662.151.929.4.267.249.391.551.391.907 0 .355-.124.657-.373.906zM5.333 7.24c-.746.018-1.373.276-1.88.773-.506.498-.769 1.13-.786 1.894v7.52c.017.764.28 1.395.786 1.893.507.498 1.134.756 1.88.773h13.334c.746-.017 1.373-.275 1.88-.773.506-.498.769-1.129.786-1.893v-7.52c-.017-.765-.28-1.396-.786-1.894-.507-.497-1.134-.755-1.88-.773zM8 11.107c.373 0 .684.124.933.373.25.249.383.569.4.96v1.173c-.017.391-.15.711-.4.96-.249.25-.56.374-.933.374s-.684-.125-.933-.374c-.25-.249-.383-.569-.4-.96V12.44c0-.373.129-.689.386-.947.258-.257.574-.386.947-.386zm8 0c.373 0 .684.124.933.373.25.249.383.569.4.96v1.173c-.017.391-.15.711-.4.96-.249.25-.56.374-.933.374s-.684-.125-.933-.374c-.25-.249-.383-.569-.4-.96V12.44c.017-.391.15-.711.4-.96.249-.249.56-.373.933-.373Z"/></svg>
+            <span class="t">Bilibili</span><span class="h">329868551</span></a>
+    </div>
+</section>
+
+<section class="col">
+    <div class="label reveal">Colophon <span class="zh">本站</span></div>
+    <dl class="reveal">
+        <div><dt>托管</dt><dd>Cloudflare Workers · Static Assets</dd></div>
+        <div><dt>构建</dt><dd>无框架、无构建步骤，单个 HTML 文件</dd></div>
+        <div><dt>排版</dt><dd>参考 innei.in 的间距刻度与字重取向；中文 Noto Serif SC</dd></div>
+        <div><dt>数据</dt><dd>项目来自 GitHub API，用量来自本机 TokenTracker，均有烧录快照兜底</dd></div>
+        <div><dt>源码</dt><dd><a href="https://github.com/fengfe1125/sakuramu-home" target="_blank" rel="noopener">fengfe1125/sakuramu-home</a></dd></div>
+    </dl>
+</section>
+
+<footer class="foot reveal">
+    <span class="k">Get in touch</span>
+    <a href="mailto:su@sakuramu.edu.kg">su@sakuramu.edu.kg</a>
+</footer>
 
 </div>
-</main>
-
 <script>
 (function () {
     'use strict';
@@ -619,30 +464,26 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
     var WORKS_SHOWN = 4;
 
     function renderWorks(all) {
-        document.querySelectorAll('.t-work').forEach(function (n) { n.remove(); });
+        document.querySelectorAll('.work').forEach(function (n) { n.remove(); });
         var list = all.slice().sort(function (a, b) {
             return +new Date(b.p) - +new Date(a.p);
         }).slice(0, WORKS_SHOWN);
-        var times = list.map(function (r) { return +new Date(r.p); });
-        var newest = Math.max.apply(null, times), oldest = Math.min.apply(null, times);
-        var span = Math.max(newest - oldest, 1);
         var html = list.map(function (r, i) {
             var c = COLORS[r.l] || 'var(--ink-faint)';
-            var rec = Math.round((+new Date(r.p) - oldest) / span * 100);
-            return '<a class="t-work pad reveal" href="https://github.com/fengfe1125/' + esc(r.n) + '" target="_blank" rel="noopener">'
-                 + '<span class="no">' + String(i + 1).padStart(2, '0') + '</span>'
+            return '<a class="work reveal" href="https://github.com/fengfe1125/' + esc(r.n) + '" target="_blank" rel="noopener">'
                  + '<div class="wtop"><span class="wname">' + esc(r.t || r.n) + '</span>'
-                 +   (r.l ? '<span class="wlang"><i class="sq" style="background:' + c + '"></i>' + esc(r.l) + '</span>' : '')
-                 +   (r.s > 0 ? '<span class="wstar">★ ' + r.s + '</span>' : '')
-                 + '</div>'
+                 +   '<span class="wmeta">'
+                 +     (r.l ? '<span><i class="sq" style="background:' + c + '"></i>' + esc(r.l) + '</span>' : '')
+                 +     (r.s > 0 ? '<span>★ ' + r.s + '</span>' : '')
+                 +     '<span>' + String(r.p).slice(0, 10) + '</span>'
+                 +     '<span class="go">↗</span>'
+                 +   '</span></div>'
                  + '<div class="wdesc">' + esc(r.d) + '</div>'
                  + (r.g && r.g.length ? '<div class="tags">' + r.g.map(function (t) { return '<b>' + esc(t) + '</b>'; }).join('') + '</div>' : '')
-                 + '<div class="wfoot"><span>' + String(r.p).slice(0, 10) + '</span>'
-                 +   '<span class="wbar" title="相对更新时间：越长表示越近"><i data-w="' + rec + '"></i></span>'
-                 +   '<span class="go">↗</span></div></a>';
+                 + '</a>';
         }).join('');
         anchor.insertAdjacentHTML('beforebegin', html);
-        var n = document.querySelector('.t-head .n');
+        var n = document.querySelector('.label .n');
         if (n) n.textContent = all.length > list.length
             ? list.length + ' / ' + all.length + ' 个'
             : list.length + ' 个';
@@ -651,6 +492,7 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
     /* ── 语言：每个仓库一个方块 ── */
     function renderSquares(list) {
         var box = document.getElementById('squares'), lg = document.getElementById('legend');
+        if (!box || !lg) return;   // 改版后已移除这两块
         if (!box) return;
         var sorted = list.slice().sort(function (a, b) {
             return String(a.l || 'zz').localeCompare(String(b.l || 'zz'));
@@ -672,6 +514,7 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
     /* ── 近 12 个月 ── */
     function renderMonths(list) {
         var box = document.getElementById('months');
+        if (!box) return;          // 改版后已移除这两块
         if (!box) return;
         var now = new Date(), keys = [], b = {};
         for (var i = 11; i >= 0; i--) {
@@ -718,7 +561,7 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
     }
 
     (function heroReveal() {
-        var targets = [document.querySelector('h1'), document.querySelector('.t-quote em')]
+        var targets = [document.querySelector('h1'), document.querySelector('.lede em')]
             .filter(Boolean);
         targets.forEach(splitWords);
         // 减少动效偏好、或标签页在后台（rAF 与动画都会被挂起）时不播动画：
@@ -1067,7 +910,7 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
         });
         out.sort(function (a, b) { return new Date(b.p) - new Date(a.p); });
         renderAll(out);
-        document.querySelectorAll('.t-work').forEach(function (e) { e.classList.add('in'); });
+        document.querySelectorAll('.work').forEach(function (e) { e.classList.add('in'); });
         fill(document); popSquares();
     }
     var c = cached();

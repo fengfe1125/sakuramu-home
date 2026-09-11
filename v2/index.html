@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>关于我 | 沐枫</title>
+<meta name="description" content="沐枫（@fengfe1125）—— 写 macOS 菜单栏工具、本地开发工具与 Python 自动化脚本。">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="profile">
+<meta property="og:url" content="https://about.sakuramu.edu.kg/">
+<meta property="og:title" content="关于我 | 沐枫">
+<script>document.documentElement.className += ' js';</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═════ 1. 令牌 ═════
+   间距刻度取自 innei.in：3.5/7/14/28/35/42/56/70/105/112px（14px 根字号下的
+   0.25rem 倍数）。这里按 16px 根字号等比放大，仍是同一套比例关系。 */
+:root {
+    --paper:#F4F2EA; --sheet:#FBFAF5; --ink:#1A1C16;
+    --ink-soft:rgba(26,28,22,.78); --ink-faint:rgba(26,28,22,.52);
+    --rule:rgba(26,28,22,.10); --rule-strong:rgba(26,28,22,.18);
+    --accent:#B24E33; --hover:rgba(178,78,51,.06); --chip:rgba(26,28,22,.045);
+    --empty:rgba(26,28,22,.06);
+
+    --s1:4px;  --s2:8px;   --s3:16px; --s4:32px;  --s5:40px;
+    --s6:48px; --s7:64px;  --s8:80px; --s9:120px; --s10:128px;
+
+    /* 389.17ms 弹簧，25% 处过冲 1.048（devouringdetails 生产环境原值） */
+    --spring:linear(0 0%, 0.013389 1%, 0.049373 2%, 0.102262 3%, 0.167133 4%, 0.239788 5%, 0.316716 6%, 0.395034 7%, 0.472432 8%, 0.547109 9%, 0.617715 10%, 0.68329 11%, 0.743204 12%, 0.797107 13%, 0.844877 14%, 0.886576 15%, 0.922409 16%, 0.952689 17%, 0.977806 18%, 0.998202 19%, 1.014346 20%, 1.026718 21%, 1.035795 22%, 1.042036 23%, 1.045879 24%, 1.04773 25%, 1.047962 26%, 1.046909 27%, 1.04487 28%, 1.042104 29%, 1.038837 30%, 1.035258 31%, 1.031524 32%, 1.027766 33%, 1.024084 34%, 1.020558 35%, 1.017245 36%, 1.014186 37%, 1.011406 38%, 1.008919 39%, 1.006726 40%, 1.004821 41%, 1.003194 42%, 1.001828 43%, 1.000702 44%, 0.999796 45%, 0.999085 46%, 0.998548 47%, 0.998162 48%, 0.997904 49%, 0.997755 50%, 0.997695 51%, 0.997707 52%, 0.997776 53%, 0.997887 54%, 0.998029 55%, 0.998192 56%, 0.998368 57%, 0.998548 58%, 0.998728 59%, 0.998903 60%, 0.999069 61%, 0.999224 62%, 0.999366 63%, 0.999495 64%, 0.99961 65%, 0.99971 66%, 0.999797 67%, 0.999871 68%, 0.999932 69%);
+    --ease-ui:cubic-bezier(.4,0,.2,1);
+}
+@media (prefers-color-scheme:dark) {
+    :root {
+        --paper:#131410; --sheet:#1A1C15; --ink:#EDEAE0;
+        --ink-soft:rgba(237,234,224,.80); --ink-faint:rgba(237,234,224,.50);
+        --rule:rgba(237,234,224,.11); --rule-strong:rgba(237,234,224,.18);
+        --accent:#E08A6C; --hover:rgba(224,138,108,.08); --chip:rgba(237,234,224,.06);
+        --empty:rgba(237,234,224,.07);
+    }
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background:var(--paper); color:var(--ink);
+    font-family:'DM Sans','Noto Serif SC',-apple-system,serif;
+    font-size:16px; line-height:1.9;
+    -webkit-font-smoothing:antialiased;
+}
+
+/* ═════ 2. 骨架：居中单栏，靠留白分段而不是靠线 ═════ */
+.page { max-width:1120px; margin:0 auto; padding:var(--s7) var(--s5) var(--s10); }
+.col  { max-width:760px; }
+section { margin-top:var(--s9); }
+
+/* 版块标签：小号等宽大写，和衬线正文拉开层级 */
+.label {
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:400;
+    letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint);
+    display:flex; align-items:baseline; gap:var(--s3); margin-bottom:var(--s5);
+}
+.label::after { content:''; flex:1; height:1px; background:var(--rule); }
+.label .zh { font-family:'Noto Serif SC',serif; font-size:.8rem;
+    letter-spacing:0; text-transform:none; }
+
+/* ═════ 3. 顶栏 ═════ */
+.top { display:flex; align-items:baseline; justify-content:space-between;
+    gap:var(--s4); flex-wrap:wrap;
+    font-family:'JetBrains Mono',monospace; font-size:11.5px;
+    letter-spacing:.04em; color:var(--ink-faint); }
+.top a { color:inherit; text-decoration:none; border-bottom:1px solid transparent;
+    transition:color .2s var(--ease-ui),border-color .2s var(--ease-ui); }
+.top a:hover { color:var(--accent); border-bottom-color:var(--accent); }
+.top nav { display:flex; gap:var(--s4); }
+.caret { display:inline-block; width:6px; height:1em; margin-left:4px;
+    background:var(--accent); vertical-align:-2px; animation:blink 1.2s steps(2) infinite; }
+@keyframes blink { 50% { opacity:0 } }
+
+/* ═════ 4. 主视觉：靠上方 120px 留白给份量，不靠字号堆 ═════ */
+.hero { margin-top:var(--s9); display:flex; gap:var(--s6); align-items:flex-start; flex-wrap:wrap; }
+.hero img { width:104px; height:104px; object-fit:cover; flex-shrink:0; }
+.hero .who { flex:1; min-width:260px; }
+h1 { font-family:'Noto Serif SC',serif; font-weight:400;
+    font-size:clamp(2.8rem,6.4vw,4.4rem); line-height:1.12; letter-spacing:-.02em; }
+.handle { font-family:'JetBrains Mono',monospace; font-size:.78rem;
+    color:var(--ink-faint); margin-top:var(--s3); letter-spacing:.04em; }
+.lede { font-size:1.12rem; color:var(--ink-soft); margin-top:var(--s5); max-width:34em; }
+.status { display:none; align-items:center; gap:8px; margin-top:var(--s4);
+    font-size:.88rem; color:var(--ink-soft); }
+.status.on { display:inline-flex; }
+#fx { width:100%; height:132px; display:block; margin-top:var(--s6); opacity:.85; }
+
+/* ═════ 5. 作品：极简列表，发丝线分隔 ═════ */
+.work { display:block; padding:var(--s5) 0; border-top:1px solid var(--rule);
+    text-decoration:none; color:inherit;
+    transition:background-color .2s var(--ease-ui),scale .389s var(--spring); }
+.work:hover { background:var(--hover); }
+.work:active { scale:.995; }
+.wtop { display:flex; align-items:baseline; gap:var(--s3); flex-wrap:wrap; }
+.wname { font-family:'Noto Serif SC',serif; font-size:1.24rem; font-weight:400; }
+.wmeta { margin-left:auto; display:flex; align-items:center; gap:var(--s3);
+    font-family:'JetBrains Mono',monospace; font-size:.64rem; color:var(--ink-faint); }
+.sq { width:7px; height:7px; flex-shrink:0; display:inline-block; margin-right:5px; }
+.wdesc { font-size:.95rem; line-height:1.95; color:var(--ink-soft);
+    margin-top:var(--s2); max-width:56em; }
+.tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:var(--s3); }
+.tags b { font-family:'JetBrains Mono',monospace; font-weight:400; font-size:.6rem;
+    padding:3px 8px; background:var(--chip); color:var(--ink-faint); }
+.go { color:var(--ink-faint); transition:transform .2s var(--ease-ui),color .2s var(--ease-ui); }
+.work:hover .go { color:var(--accent); transform:translate(3px,-3px); }
+
+/* ═════ 6. 外链：一行文字链，不做卡片 ═════ */
+.links { display:flex; flex-wrap:wrap; gap:var(--s3) var(--s6); }
+.links a { display:inline-flex; align-items:center; gap:10px; text-decoration:none;
+    color:inherit; padding:var(--s2) 0;
+    transition:color .2s var(--ease-ui),scale .389s var(--spring); }
+.links a:hover { color:var(--accent); }
+.links a:active { scale:.97; }
+.links svg { width:17px; height:17px; fill:currentColor; opacity:.7; }
+.links .t { font-size:.95rem; }
+.links .h { font-family:'JetBrains Mono',monospace; font-size:.64rem; color:var(--ink-faint); }
+
+/* ═════ 7. Token 统计 ═════ */
+.tkstats { display:grid; grid-template-columns:repeat(3,1fr);
+    gap:var(--s7) var(--s5); margin-bottom:var(--s8); }
+.stat b { display:block; font-family:'Noto Serif SC',serif; font-weight:400;
+    font-size:clamp(1.7rem,3.4vw,2.4rem); line-height:1.1;
+    letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.stat span { display:block; margin-top:10px; font-family:'JetBrains Mono',monospace;
+    font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); }
+
+.tkhead { display:flex; align-items:baseline; gap:var(--s3); margin-bottom:var(--s4); }
+.vh { font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--ink-faint); }
+.tkviews { margin-left:auto; display:flex; gap:var(--s1); }
+.tkviews button { font-family:'JetBrains Mono',monospace; font-size:.62rem;
+    padding:4px 9px; background:none; color:var(--ink-faint); letter-spacing:.04em;
+    border:0; border-bottom:1px solid transparent; cursor:pointer;
+    transition:color .2s var(--ease-ui),border-color .2s var(--ease-ui); }
+.tkviews button:hover { color:var(--ink-soft); }
+.tkviews button[aria-selected="true"] { color:var(--accent); border-bottom-color:var(--accent); }
+
+/* 行高、列宽、间隙由 JS 按可用宽度算（见 drawMap）；
+   塞不下时 .tkscroll 自己横向滚动，整页绝不出现横向滚动条。 */
+.tkscroll { overflow-x:auto; overflow-y:hidden; }
+.tkgrid { display:grid; grid-auto-flow:column; gap:3px; }
+.tkgrid i { background:var(--empty); transition:background-color .5s var(--ease-ui); }
+.tkgrid i.l1 { background:color-mix(in srgb,var(--accent) 32%,transparent); }
+.tkgrid i.l2 { background:color-mix(in srgb,var(--accent) 64%,transparent); }
+.tkgrid i.l3 { background:var(--accent); }
+.tkgrid i.pad { visibility:hidden; }
+.tkmonths { display:grid; gap:3px; margin-top:9px; overflow:hidden;
+    font-family:'JetBrains Mono',monospace; font-size:.58rem; color:var(--ink-faint); }
+.tkmonths span { white-space:nowrap; }
+.tkfoot { display:flex; align-items:center; gap:var(--s2); margin-top:var(--s3);
+    font-family:'JetBrains Mono',monospace; font-size:.62rem; color:var(--ink-faint); }
+.tkscale { display:flex; align-items:center; gap:3px; margin-left:auto; }
+.tkscale i { width:9px; height:9px; background:var(--empty); }
+.tkscale i.l1 { background:color-mix(in srgb,var(--accent) 32%,transparent); }
+.tkscale i.l2 { background:color-mix(in srgb,var(--accent) 64%,transparent); }
+.tkscale i.l3 { background:var(--accent); }
+.tkcap { margin-top:var(--s3); font-family:'JetBrains Mono',monospace;
+    font-size:.6rem; line-height:1.9; color:var(--ink-faint); max-width:52em; }
+
+.tkagents { display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:var(--s4) var(--s6); margin-top:var(--s8); }
+.tkagent { display:grid; grid-template-columns:1fr auto; gap:6px var(--s2); align-items:baseline; }
+.tkagent .n { font-family:'JetBrains Mono',monospace; font-size:.7rem; color:var(--ink-soft); }
+.tkagent .v { font-family:'JetBrains Mono',monospace; font-size:.64rem; color:var(--ink-faint);
+    font-variant-numeric:tabular-nums; }
+.wbar { grid-column:1 / -1; height:2px; background:var(--rule); position:relative; }
+.wbar i { position:absolute; inset:0 auto 0 0; width:0;
+    background:color-mix(in srgb,var(--accent) 55%,transparent);
+    transition:width .9s cubic-bezier(.2,.7,.3,1); }
+
+/* ═════ 8. 定义列表（口径 / 本站）═════ */
+dl { font-family:'JetBrains Mono',monospace; font-size:.72rem; line-height:2.1;
+    margin-top:var(--s5); }
+dl div { display:flex; gap:var(--s4); }
+dl dt { color:var(--ink-faint); width:76px; flex-shrink:0; }
+dl dd { color:var(--ink-soft); max-width:52em; }
+dl a { color:var(--accent); text-decoration:none;
+    border-bottom:1px solid transparent; transition:border-color .2s var(--ease-ui); }
+dl a:hover { border-bottom-color:var(--accent); }
+
+/* ═════ 9. 页脚 ═════ */
+.foot { margin-top:var(--s10); padding-top:var(--s6); border-top:1px solid var(--rule);
+    display:flex; align-items:baseline; justify-content:space-between; gap:var(--s4);
+    flex-wrap:wrap; }
+.foot .k { font-family:'JetBrains Mono',monospace; font-size:.62rem;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint); }
+.foot a { font-family:'JetBrains Mono',monospace; font-size:.86rem;
+    color:var(--accent); text-decoration:none;
+    border-bottom:1px solid transparent; transition:border-color .2s var(--ease-ui); }
+.foot a:hover { border-bottom-color:var(--accent); }
+
+/* ═════ 10. 揭示动画 ═════
+   只做 blur + 透明度，不做位移（位移会让整页滚动时抖一下）。
+   参数同 devouringdetails：blur(6px)→0，.75s ease。 */
+.js .reveal { opacity:0; filter:blur(6px);
+    transition:opacity .75s ease,filter .75s ease,
+               background-color .2s var(--ease-ui),scale .389s var(--spring); }
+.js .reveal.in { opacity:1; filter:blur(0); }
+
+@keyframes fadeInBlur { to { opacity:1; filter:blur(0); } }
+.w { display:inline-block; }
+.pre .w { opacity:0; filter:blur(6px); }
+.pre.lit .w { animation:fadeInBlur .75s ease both; animation-delay:calc(var(--i) * 45ms); }
+
+@media (max-width:900px) {
+    .page { padding:var(--s5) var(--s4) var(--s8); }
+    section { margin-top:var(--s8); }
+    .hero { margin-top:var(--s7); gap:var(--s5); }
+    .tkstats { grid-template-columns:repeat(2,1fr); gap:var(--s6) var(--s4); }
+    .tkagents { grid-template-columns:1fr; }
+    dl div { flex-direction:column; gap:0; }
+    dl dt { width:auto; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+    *,*::before,*::after { animation:none !important; transition:none !important; }
+    .js .reveal { opacity:1 !important; filter:none !important; }
+    .pre .w { opacity:1 !important; filter:none !important; animation:none !important; }
+    .work:active,.links a:active { scale:1 !important; }
+}
+</style>
+<style>
+/* 关于页特有：长文排版 */
+.prose { max-width:34em; }
+.prose p { margin-top:var(--s4); color:var(--ink-soft); font-size:1.02rem; }
+.prose p:first-child { margin-top:0; }
+.prose strong { font-weight:500; color:var(--ink); }
+.todo { border-left:2px solid var(--accent); padding:var(--s2) 0 var(--s2) var(--s3);
+    margin-top:var(--s4); font-family:'JetBrains Mono',monospace;
+    font-size:.72rem; line-height:1.9; color:var(--ink-faint); }
+.back { font-family:'JetBrains Mono',monospace; font-size:11.5px; letter-spacing:.04em;
+    color:var(--ink-faint); text-decoration:none;
+    border-bottom:1px solid transparent; transition:color .2s var(--ease-ui),border-color .2s var(--ease-ui); }
+.back:hover { color:var(--accent); border-bottom-color:var(--accent); }
+.stack { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:var(--s4) var(--s5); margin-top:var(--s5); }
+.stack div { border-top:1px solid var(--rule); padding-top:var(--s3); }
+.stack dt { font-family:'JetBrains Mono',monospace; font-size:.6rem; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--ink-faint); }
+.stack dd { font-size:.95rem; color:var(--ink-soft); margin-top:6px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="top">
+    <a class="back" href="https://sakuramu.edu.kg">← 沐枫</a>
+    <nav><a href="mailto:su@sakuramu.edu.kg">su@sakuramu.edu.kg</a></nav>
+</header>
+
+<div class="hero">
+    <img src="https://sakuramu.edu.kg/avatar.jpg" alt="沐枫的头像" loading="eager">
+    <div class="who">
+        <h1>关于我</h1>
+        <div class="handle">@fengfe1125 · mufeng</div>
+        <p class="lede">新手开发者。求知，探索。<em>Dare to think.</em></p>
+    </div>
+</div>
+
+<section class="col">
+    <div class="label reveal">Who <span class="zh">我是谁</span></div>
+    <div class="prose reveal">
+        <p>我叫沐枫，在做的事情大多围绕一件：<strong>把重复的操作变成不用想的操作</strong>。</p>
+        <p>写 macOS 菜单栏常驻工具、本地开发工具，以及一堆自用的 Python 脚本。它们都不大，
+           解决的也都是些具体而琐碎的问题 —— 但正是这些问题每天都在消耗注意力。</p>
+        <div class="todo">这段是我按站上已有的信息起的草稿。<br>
+            你自己的故事、为什么开始写代码、在意什么 —— 换成你的话。</div>
+    </div>
+</section>
+
+<section class="col">
+    <div class="label reveal">Now <span class="zh">在做什么</span></div>
+    <div class="prose reveal">
+        <p><strong>TokenTracker</strong> —— macOS 状态栏常驻，统计本机七个 AI 编程工具的 Token
+           用量与成本。日志只在本机读取和保存，聚合后的数字才会发到公网。</p>
+        <p><strong>DevDisk</strong> —— 外置开发盘的状态面板与安全弹出工具。gradle daemon、adb、
+           Xcode 会长期持有盘上的文件句柄，直接推出会截断缓存。</p>
+        <p><strong>Mufeng</strong> —— 让手机安全访问电脑上的 Codex UI，配合 Nginx 与 Tailscale 对外暴露。</p>
+        <p>完整列表在 <a href="https://github.com/fengfe1125" target="_blank" rel="noopener">GitHub</a>，
+           用量数据在<a href="https://sakuramu.edu.kg#tokens">主页底部</a>。</p>
+    </div>
+</section>
+
+<section>
+    <div class="label reveal">Stack <span class="zh">在用什么</span></div>
+    <dl class="stack reveal">
+        <div><dt>写代码</dt><dd>Claude Code · Codex · Kimi Code</dd></div>
+        <div><dt>语言</dt><dd>Swift · Python · JavaScript</dd></div>
+        <div><dt>平台</dt><dd>macOS · Cloudflare Workers</dd></div>
+        <div><dt>编辑器</dt><dd>VS Code · 终端</dd></div>
+    </dl>
+    <div class="todo reveal" style="max-width:34em">这几格按你实际用的改。</div>
+</section>
+
+<section class="col">
+    <div class="label reveal">Elsewhere <span class="zh">别处</span></div>
+    <div class="links reveal">
+        <a href="https://github.com/fengfe1125" target="_blank" rel="noopener">
+            <span class="t">GitHub</span><span class="h">@fengfe1125</span></a>
+        <a href="https://x.com/Answerudp" target="_blank" rel="noopener">
+            <span class="t">X</span><span class="h">@Answerudp</span></a>
+        <a href="https://t.me/+u6L-BJNTza4xYThl" target="_blank" rel="noopener">
+            <span class="t">Telegram</span><span class="h">群组</span></a>
+        <a href="https://space.bilibili.com/329868551" target="_blank" rel="noopener">
+            <span class="t">Bilibili</span><span class="h">329868551</span></a>
+    </div>
+</section>
+
+<footer class="foot reveal">
+    <span class="k">Get in touch</span>
+    <a href="mailto:su@sakuramu.edu.kg">su@sakuramu.edu.kg</a>
+</footer>
+
+</div>
+
+<script>
+(function () {
+    'use strict';
+    var still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* 揭示：与主站同一套 —— 后台标签页里渲染挂起时直接跳终态，
+       动画绝不能是内容可见的前提。 */
+    function revealNow(el) {
+        if (still || document.hidden) {
+            el.style.transition = 'none';
+            el.classList.add('in');
+            void el.offsetWidth;
+            el.style.transition = '';
+        } else {
+            el.classList.add('in');
+        }
+    }
+    var io = null, fired = false;
+    function observe() {
+        if (still || !('IntersectionObserver' in window)) {
+            document.querySelectorAll('.reveal').forEach(revealNow);
+            return;
+        }
+        if (!io) {
+            io = new IntersectionObserver(function (es) {
+                es.forEach(function (e) {
+                    if (!e.isIntersecting) return;
+                    fired = true; revealNow(e.target); io.unobserve(e.target);
+                });
+            }, { threshold:.1, rootMargin:'0px 0px -30px 0px' });
+        }
+        document.querySelectorAll('.reveal:not(.in)').forEach(function (el) { io.observe(el); });
+    }
+    observe();
+    setTimeout(function () {
+        if (fired) return;
+        document.querySelectorAll('.reveal:not(.in)').forEach(revealNow);
+    }, 2500);
+
+    /* 逐字揭示：中文按单字拆，拉丁词整体保留 */
+    function splitWords(el) {
+        if (!el || el.dataset.split) return;
+        var units = [];
+        el.textContent.trim().split(/\s+/).forEach(function (token) {
+            if (/[\u4e00-\u9fff\u3040-\u30ff]/.test(token)) {
+                token.split('').forEach(function (ch) { units.push([ch, false]); });
+            } else { units.push([token, true]); }
+        });
+        el.textContent = '';
+        units.forEach(function (u, i) {
+            var span = document.createElement('span');
+            span.className = 'w';
+            span.style.setProperty('--i', i);
+            span.textContent = u[0];
+            el.appendChild(span);
+            if (u[1]) el.appendChild(document.createTextNode(' '));
+        });
+        el.dataset.split = '1';
+    }
+    (function heroReveal() {
+        var targets = [document.querySelector('h1'), document.querySelector('.lede em')].filter(Boolean);
+        targets.forEach(splitWords);
+        if (still || document.hidden) return;
+        targets.forEach(function (el) { el.classList.add('pre'); });
+        requestAnimationFrame(function () {
+            targets.forEach(function (el) { el.classList.add('lit'); });
+        });
+    })();
+})();
+</script>
+</body>
+</html>
