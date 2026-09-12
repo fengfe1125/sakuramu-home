@@ -23,8 +23,10 @@ jobs:
           node --check scripts/refresh-snapshot.mjs
           node --check admin/src/index.mjs
           node --check admin/src/access.mjs
+          node --check admin/src/monitor.mjs
           node --check tests/test_notes.js
           node --check tests/test_access.js
+          node --check tests/test_monitor.js
 
       - name: 渲染器回归
         run: node tests/test_notes.js
@@ -33,6 +35,11 @@ jobs:
       # 走完整条 verifyAccess。这段代码是后台唯一的闸，不能只靠读代码放心。
       - name: Access 校验回归
         run: node tests/test_access.js
+
+      # 监控系统真正的价值是「该报的报、不该报的不报」，而重复告警和
+      # 抖动误报只在特定状态序列下才出现，肉眼审不出来。
+      - name: 监控状态机回归
+        run: node tests/test_monitor.js
 
       # 后台在公网上，而 Access 只挡自定义域这一条路。
       # workers.dev 和版本预览 URL 是两个不同的主机名，都绕过 Access ——

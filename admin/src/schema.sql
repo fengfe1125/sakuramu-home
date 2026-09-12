@@ -65,3 +65,13 @@ CREATE TABLE IF NOT EXISTS notes (
   updated_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_notes_pub ON notes(published, date DESC);
+
+-- ── 杂项键值 ────────────────────────────────────────────────
+-- 目前只存一件事：cron 上次跑完是什么时候。
+-- 监控系统最糟的失败模式是「自己的调度器悄悄死了，界面还一片绿」——
+-- 没有这一行，那种故障从界面上完全看不出来。
+CREATE TABLE IF NOT EXISTS meta (
+  k  TEXT PRIMARY KEY,
+  v  TEXT,
+  at INTEGER NOT NULL
+);
