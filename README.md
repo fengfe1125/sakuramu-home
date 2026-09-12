@@ -23,6 +23,7 @@ npm test               # 渲染器回归（零依赖）
 npm run dev            # 本地预览主站 http://localhost:8787
 npm run snapshot       # 只刷新烧录的快照，不部署
 npm run notes          # 只渲染手记，不部署
+npm run css            # 只注入共用样式，不部署
 npm run deploy         # 刷新快照 + 部署主站
 npm run deploy:about   # 渲染手记 + 部署关于页
 npm run deploy:admin   # 部署后台
@@ -209,6 +210,38 @@ https://sakuramu.edu.kg/      中断 12 分钟 · 340ms
 
 cron 本身 1440 次/天，远低于 10 万次/天的请求配额。
 
+## 共用样式
+
+首页和关于页有 **132 行逐字相同的 CSS**，存在 `shared/base.css`，
+由 `scripts/build-css.mjs` 注入两个页面的 `base:start` / `base:end` 之间。
+改样式改那一个文件，两边同时生效。
+
+**为什么不是外链样式表**：站点的原则是「访客拿到的是单个自包含 HTML」——
+外链会多一次阻塞渲染的请求，首屏样式也必须内联才不闪。
+这里走的是和 `build-notes.mjs` 完全相同的套路：仓库里有工具，产物仍是一个文件。
+
+**为什么只抽这 132 行**：它们是两个文件里**逐字相同的开头**，
+不是散落各处的相同规则。原样放回原位，源码顺序丝毫不变 ——
+CSS 靠源码顺序层叠，把散落的规则收拢成一块会悄悄改变同优先级规则的胜负。
+抽完逐条比对过：两个页面的规则数、顺序、内容完全一致。
+
+CI 里 `build-css --check` 会盯着：改了 `shared/base.css` 却忘了跑 `npm run css` 就红。
+
+## 安全响应头
+
+`public/_headers` 与 `v2/_headers`（Workers Static Assets 原生支持，
+文件本身不会被当成资源发出去）。
+
+CSP 里留着 `'unsafe-inline'` 是没办法的事：页面的样式和脚本全部内联，
+而脚本内容每次刷快照都会变，用 hash 会天天失效。即便如此这条策略仍然有价值 ——
+它挡住的是「注入一个外部脚本」和「把数据 POST 到任意域名」，
+那才是静态站最现实的两种攻击面。`connect-src` 按每个页面实际用到的来源写，多一个都不给。
+
+> 第一版 CSP 把 Cloudflare Web Analytics 的 beacon 挡掉了 ——
+> 它是 Cloudflare 在边缘自动注入的，不在 HTML 源码里，所以看源码发现不了。
+> 改 CSP 之后一定要开一个**全新标签页**实测：控制台的报错缓冲区不随刷新清空，
+> 你会盯着旧指令的报错以为没修好。
+
 ## 兜底快照
 
 首页底部的用量数据来自本机 TokenTracker，经
@@ -350,6 +383,7 @@ v2/notes/*.md       手记原稿
 admin/src/          后台 Worker（路由、鉴权、探测、告警、手记校验、建表）
 admin/ui/index.html 后台界面（自包含，复用站点的设计令牌）
 notes-api/src/      手记的公开只读 Worker（只有一条 GET 路径）
+shared/base.css     首页与关于页共用的那段样式（由 build-css 注入两边）
 shared/             发版脚本与 Worker 共用的纯函数
 scripts/            发版脚本
 tests/              零依赖回归测试

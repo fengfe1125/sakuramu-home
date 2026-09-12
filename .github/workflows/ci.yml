@@ -20,6 +20,7 @@ jobs:
         run: |
           node --check shared/notes-render.mjs
           node --check scripts/build-notes.mjs
+          node --check scripts/build-css.mjs
           node --check scripts/refresh-snapshot.mjs
           node --check admin/src/index.mjs
           node --check admin/src/access.mjs
@@ -79,6 +80,11 @@ jobs:
       # 那是为了不让手记问题挡住整站发布；但 CI 的职责恰恰是把问题拦下来。
       - name: 手记可渲染
         run: node scripts/build-notes.mjs --strict --no-remote
+
+      # 两个页面共用的那段 CSS 存在 shared/base.css，由 build-css 注入。
+      # 改了 shared/base.css 却忘了跑 npm run css，两个页面就会和源文件脱节。
+      - name: 共用样式已注入
+        run: node scripts/build-css.mjs --check
 
       # build-notes 会就地改写 v2/index.html。如果 CI 里跑完有差异，
       # 说明提交时忘了跑 npm run notes，页面与源稿不一致。

@@ -1,0 +1,13 @@
+# 见 public/_headers 的说明。两处差异：
+#   · 头像是从主站跨域引的，img-src 要放行 sakuramu.edu.kg
+#   · 手记从 notes.sakuramu.edu.kg 拉，connect-src 要放行它
+#
+# script-src / connect-src 里的 cloudflareinsights 是给 Cloudflare Web Analytics
+# 的 beacon 用的 —— 它由 Cloudflare 在边缘自动注入到 HTML 里，
+# 不放行的话站点统计会静默失效（第一版 CSP 就踩了这个，实测才发现）。
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://sakuramu.edu.kg; connect-src 'self' https://notes.sakuramu.edu.kg https://cloudflareinsights.com; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'

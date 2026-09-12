@@ -14,6 +14,17 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+/* base:start */
+/* 首页与关于页共用的那一段样式。
+ *
+ * 为什么能安全抽出来：这 132 行在两个文件里是**逐字相同的开头**，
+ * 不是散落各处的相同规则。原样放回原位，源码顺序丝毫不变 ——
+ * CSS 靠源码顺序层叠，把散落的规则收拢成一块会悄悄改变同优先级规则的胜负。
+ *
+ * 由 scripts/build-css.mjs 注入两个页面的 base:start / base:end 之间。
+ * 访客拿到的仍然是单个自包含 HTML，不多一次请求。
+ * 改样式改这里，两边同时生效；CI 会检查注入结果与源文件一致。
+ */
 /* ═════ 1. 令牌 ═════
    间距刻度取自 innei.in：3.5/7/14/28/35/42/56/70/105/112px（14px 根字号下的
    0.25rem 倍数）。这里按 16px 根字号等比放大，仍是同一套比例关系。 */
@@ -146,6 +157,7 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
    塞不下时 .tkscroll 自己横向滚动，整页绝不出现横向滚动条。 */
 .tkscroll { overflow-x:auto; overflow-y:hidden; }
 .tkgrid { display:grid; grid-auto-flow:column; gap:3px; }
+/* base:end */
 .tkgrid i { background:var(--empty); transition:background-color .5s var(--ease-ui); }
 .tkgrid i.l1 { background:color-mix(in srgb,var(--accent) 32%,transparent); }
 .tkgrid i.l2 { background:color-mix(in srgb,var(--accent) 64%,transparent); }

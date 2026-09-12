@@ -1,0 +1,142 @@
+/* 首页与关于页共用的那一段样式。
+ *
+ * 为什么能安全抽出来：这 132 行在两个文件里是**逐字相同的开头**，
+ * 不是散落各处的相同规则。原样放回原位，源码顺序丝毫不变 ——
+ * CSS 靠源码顺序层叠，把散落的规则收拢成一块会悄悄改变同优先级规则的胜负。
+ *
+ * 由 scripts/build-css.mjs 注入两个页面的 base:start / base:end 之间。
+ * 访客拿到的仍然是单个自包含 HTML，不多一次请求。
+ * 改样式改这里，两边同时生效；CI 会检查注入结果与源文件一致。
+ */
+/* ═════ 1. 令牌 ═════
+   间距刻度取自 innei.in：3.5/7/14/28/35/42/56/70/105/112px（14px 根字号下的
+   0.25rem 倍数）。这里按 16px 根字号等比放大，仍是同一套比例关系。 */
+:root {
+    --paper:#F4F2EA; --sheet:#FBFAF5; --ink:#1A1C16;
+    --ink-soft:rgba(26,28,22,.78); --ink-faint:rgba(26,28,22,.52);
+    --rule:rgba(26,28,22,.10); --rule-strong:rgba(26,28,22,.18);
+    --accent:#B24E33; --hover:rgba(178,78,51,.06); --chip:rgba(26,28,22,.045);
+    --empty:rgba(26,28,22,.06);
+
+    --s1:4px;  --s2:8px;   --s3:16px; --s4:32px;  --s5:40px;
+    --s6:48px; --s7:64px;  --s8:80px; --s9:120px; --s10:128px;
+
+    /* 389.17ms 弹簧，25% 处过冲 1.048（devouringdetails 生产环境原值） */
+    --spring:linear(0 0%, 0.013389 1%, 0.049373 2%, 0.102262 3%, 0.167133 4%, 0.239788 5%, 0.316716 6%, 0.395034 7%, 0.472432 8%, 0.547109 9%, 0.617715 10%, 0.68329 11%, 0.743204 12%, 0.797107 13%, 0.844877 14%, 0.886576 15%, 0.922409 16%, 0.952689 17%, 0.977806 18%, 0.998202 19%, 1.014346 20%, 1.026718 21%, 1.035795 22%, 1.042036 23%, 1.045879 24%, 1.04773 25%, 1.047962 26%, 1.046909 27%, 1.04487 28%, 1.042104 29%, 1.038837 30%, 1.035258 31%, 1.031524 32%, 1.027766 33%, 1.024084 34%, 1.020558 35%, 1.017245 36%, 1.014186 37%, 1.011406 38%, 1.008919 39%, 1.006726 40%, 1.004821 41%, 1.003194 42%, 1.001828 43%, 1.000702 44%, 0.999796 45%, 0.999085 46%, 0.998548 47%, 0.998162 48%, 0.997904 49%, 0.997755 50%, 0.997695 51%, 0.997707 52%, 0.997776 53%, 0.997887 54%, 0.998029 55%, 0.998192 56%, 0.998368 57%, 0.998548 58%, 0.998728 59%, 0.998903 60%, 0.999069 61%, 0.999224 62%, 0.999366 63%, 0.999495 64%, 0.99961 65%, 0.99971 66%, 0.999797 67%, 0.999871 68%, 0.999932 69%);
+    --ease-ui:cubic-bezier(.4,0,.2,1);
+}
+@media (prefers-color-scheme:dark) {
+    :root {
+        --paper:#131410; --sheet:#1A1C15; --ink:#EDEAE0;
+        --ink-soft:rgba(237,234,224,.80); --ink-faint:rgba(237,234,224,.50);
+        --rule:rgba(237,234,224,.11); --rule-strong:rgba(237,234,224,.18);
+        --accent:#E08A6C; --hover:rgba(224,138,108,.08); --chip:rgba(237,234,224,.06);
+        --empty:rgba(237,234,224,.07);
+    }
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background:var(--paper); color:var(--ink);
+    font-family:'DM Sans','Noto Serif SC',-apple-system,serif;
+    font-size:16px; line-height:1.9;
+    -webkit-font-smoothing:antialiased;
+}
+
+/* ═════ 2. 骨架：居中单栏，靠留白分段而不是靠线 ═════ */
+.page { max-width:1120px; margin:0 auto; padding:var(--s7) var(--s5) var(--s10); }
+.col  { max-width:760px; }
+section { margin-top:var(--s9); }
+
+/* 版块标签：小号等宽大写，和衬线正文拉开层级 */
+.label {
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:400;
+    letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint);
+    display:flex; align-items:baseline; gap:var(--s3); margin-bottom:var(--s5);
+}
+.label::after { content:''; flex:1; height:1px; background:var(--rule); }
+.label .zh { font-family:'Noto Serif SC',serif; font-size:.8rem;
+    letter-spacing:0; text-transform:none; }
+
+/* ═════ 3. 顶栏 ═════ */
+.top { display:flex; align-items:baseline; justify-content:space-between;
+    gap:var(--s4); flex-wrap:wrap;
+    font-family:'JetBrains Mono',monospace; font-size:11.5px;
+    letter-spacing:.04em; color:var(--ink-faint); }
+.top a { color:inherit; text-decoration:none; border-bottom:1px solid transparent;
+    transition:color .2s var(--ease-ui),border-color .2s var(--ease-ui); }
+.top a:hover { color:var(--accent); border-bottom-color:var(--accent); }
+.top nav { display:flex; gap:var(--s4); }
+.caret { display:inline-block; width:6px; height:1em; margin-left:4px;
+    background:var(--accent); vertical-align:-2px; animation:blink 1.2s steps(2) infinite; }
+@keyframes blink { 50% { opacity:0 } }
+
+/* ═════ 4. 主视觉：靠上方 120px 留白给份量，不靠字号堆 ═════ */
+.hero { margin-top:var(--s9); display:flex; gap:var(--s6); align-items:flex-start; flex-wrap:wrap; }
+.hero img { width:104px; height:104px; object-fit:cover; flex-shrink:0; }
+.hero .who { flex:1; min-width:260px; }
+h1 { font-family:'Noto Serif SC',serif; font-weight:400;
+    font-size:clamp(2.8rem,6.4vw,4.4rem); line-height:1.12; letter-spacing:-.02em; }
+.handle { font-family:'JetBrains Mono',monospace; font-size:.78rem;
+    color:var(--ink-faint); margin-top:var(--s3); letter-spacing:.04em; }
+.lede { font-size:1.12rem; color:var(--ink-soft); margin-top:var(--s5); max-width:34em; }
+.status { display:none; align-items:center; gap:8px; margin-top:var(--s4);
+    font-size:.88rem; color:var(--ink-soft); }
+.status.on { display:inline-flex; }
+#fx { width:100%; height:132px; display:block; margin-top:var(--s6); opacity:.85; }
+
+/* ═════ 5. 作品：极简列表，发丝线分隔 ═════ */
+.work { display:block; padding:var(--s5) 0; border-top:1px solid var(--rule);
+    text-decoration:none; color:inherit;
+    transition:background-color .2s var(--ease-ui),scale .389s var(--spring); }
+.work:hover { background:var(--hover); }
+.work:active { scale:.995; }
+.wtop { display:flex; align-items:baseline; gap:var(--s3); flex-wrap:wrap; }
+.wname { font-family:'Noto Serif SC',serif; font-size:1.24rem; font-weight:400; }
+.wmeta { margin-left:auto; display:flex; align-items:center; gap:var(--s3);
+    font-family:'JetBrains Mono',monospace; font-size:.64rem; color:var(--ink-faint); }
+.sq { width:7px; height:7px; flex-shrink:0; display:inline-block; margin-right:5px; }
+.wdesc { font-size:.95rem; line-height:1.95; color:var(--ink-soft);
+    margin-top:var(--s2); max-width:56em; }
+.tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:var(--s3); }
+.tags b { font-family:'JetBrains Mono',monospace; font-weight:400; font-size:.6rem;
+    padding:3px 8px; background:var(--chip); color:var(--ink-faint); }
+.go { color:var(--ink-faint); transition:transform .2s var(--ease-ui),color .2s var(--ease-ui); }
+.work:hover .go { color:var(--accent); transform:translate(3px,-3px); }
+
+/* ═════ 6. 外链：一行文字链，不做卡片 ═════ */
+.links { display:flex; flex-wrap:wrap; gap:var(--s3) var(--s6); }
+.links a { display:inline-flex; align-items:center; gap:10px; text-decoration:none;
+    color:inherit; padding:var(--s2) 0;
+    transition:color .2s var(--ease-ui),scale .389s var(--spring); }
+.links a:hover { color:var(--accent); }
+.links a:active { scale:.97; }
+.links svg { width:17px; height:17px; fill:currentColor; opacity:.7; }
+.links .t { font-size:.95rem; }
+.links .h { font-family:'JetBrains Mono',monospace; font-size:.64rem; color:var(--ink-faint); }
+
+/* ═════ 7. Token 统计 ═════ */
+.tkstats { display:grid; grid-template-columns:repeat(3,1fr);
+    gap:var(--s7) var(--s5); margin-bottom:var(--s8); }
+.stat b { display:block; font-family:'Noto Serif SC',serif; font-weight:400;
+    font-size:clamp(1.7rem,3.4vw,2.4rem); line-height:1.1;
+    letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.stat span { display:block; margin-top:10px; font-family:'JetBrains Mono',monospace;
+    font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); }
+
+.tkhead { display:flex; align-items:baseline; gap:var(--s3); margin-bottom:var(--s4); }
+.vh { font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--ink-faint); }
+.tkviews { margin-left:auto; display:flex; gap:var(--s1); }
+.tkviews button { font-family:'JetBrains Mono',monospace; font-size:.62rem;
+    padding:4px 9px; background:none; color:var(--ink-faint); letter-spacing:.04em;
+    border:0; border-bottom:1px solid transparent; cursor:pointer;
+    transition:color .2s var(--ease-ui),border-color .2s var(--ease-ui); }
+.tkviews button:hover { color:var(--ink-soft); }
+.tkviews button[aria-selected="true"] { color:var(--accent); border-bottom-color:var(--accent); }
+
+/* 行高、列宽、间隙由 JS 按可用宽度算（见 drawMap）；
+   塞不下时 .tkscroll 自己横向滚动，整页绝不出现横向滚动条。 */
+.tkscroll { overflow-x:auto; overflow-y:hidden; }
+.tkgrid { display:grid; grid-auto-flow:column; gap:3px; }

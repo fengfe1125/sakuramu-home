@@ -1,0 +1,21 @@
+# 静态资源的响应头。这个文件本身不会被当成资源发出去。
+#
+# CSP 里留着 'unsafe-inline' 是没办法的事：页面的样式和脚本全部内联，
+# 而脚本内容每次刷快照都会变，用 hash 会天天失效。
+# 即便如此这条策略仍然有价值 —— 它挡住的是「注入一个外部脚本」
+# 和「把数据 POST 到任意域名」，那才是静态站最现实的两种攻击面。
+#
+# connect-src 是按页面实际用到的来源写的，多一个都不给：
+#   /status.json      → 'self'
+#   用量统计           → tt.sakuramu.edu.kg
+#   项目列表           → api.github.com
+#
+# script-src / connect-src 里的 cloudflareinsights 是给 Cloudflare Web Analytics
+# 的 beacon 用的 —— 它由 Cloudflare 在边缘自动注入到 HTML 里，
+# 不放行的话站点统计会静默失效（第一版 CSP 就踩了这个，实测才发现）。
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://tt.sakuramu.edu.kg https://api.github.com https://cloudflareinsights.com; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'

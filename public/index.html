@@ -21,6 +21,17 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <style>
+/* base:start */
+/* 首页与关于页共用的那一段样式。
+ *
+ * 为什么能安全抽出来：这 132 行在两个文件里是**逐字相同的开头**，
+ * 不是散落各处的相同规则。原样放回原位，源码顺序丝毫不变 ——
+ * CSS 靠源码顺序层叠，把散落的规则收拢成一块会悄悄改变同优先级规则的胜负。
+ *
+ * 由 scripts/build-css.mjs 注入两个页面的 base:start / base:end 之间。
+ * 访客拿到的仍然是单个自包含 HTML，不多一次请求。
+ * 改样式改这里，两边同时生效；CI 会检查注入结果与源文件一致。
+ */
 /* ═════ 1. 令牌 ═════
    间距刻度取自 innei.in：3.5/7/14/28/35/42/56/70/105/112px（14px 根字号下的
    0.25rem 倍数）。这里按 16px 根字号等比放大，仍是同一套比例关系。 */
@@ -153,6 +164,7 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
    塞不下时 .tkscroll 自己横向滚动，整页绝不出现横向滚动条。 */
 .tkscroll { overflow-x:auto; overflow-y:hidden; }
 .tkgrid { display:grid; grid-auto-flow:column; gap:3px; }
+/* base:end */
 .tkgrid i { background:var(--empty); transition:background-color .5s var(--ease-ui),
             outline-color .15s var(--ease-ui); outline:1px solid transparent; outline-offset:1px; }
 .tkgrid i:not(.pad):hover { outline-color:var(--accent); }
@@ -340,19 +352,6 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
     var still = matchMedia('(prefers-reduced-motion: reduce)').matches;
     var PROJECTS = [
         {
-            "n": "tokentracker",
-            "t": "TokenTracker",
-            "d": "macOS 状态栏常驻，统计本机 Claude Code、Codex、Kimi Code、opencode 等七个 AI 编程工具的 Token 用量与成本。用量日志只在本机读取和保存，不上传。",
-            "g": [
-                "macOS",
-                "SwiftUI",
-                "菜单栏"
-            ],
-            "l": "Swift",
-            "s": 1,
-            "p": "2026-09-11T14:38:51Z"
-        },
-        {
             "n": "devdisk",
             "t": "DevDisk",
             "d": "外置开发盘的状态面板与安全弹出工具。gradle daemon、adb、Xcode 会长期持有盘上的文件句柄，直接推出会截断缓存写入、事后变成莫名其妙的构建失败。它查清占用并按正确顺序弹出。",
@@ -363,7 +362,20 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
             ],
             "l": "Swift",
             "s": 0,
-            "p": "2026-09-09T07:50:32Z"
+            "p": "2026-09-12T10:57:16Z"
+        },
+        {
+            "n": "tokentracker",
+            "t": "TokenTracker",
+            "d": "macOS 状态栏常驻，统计本机 Claude Code、Codex、Kimi Code、opencode 等七个 AI 编程工具的 Token 用量与成本。用量日志只在本机读取和保存，不上传。",
+            "g": [
+                "macOS",
+                "SwiftUI",
+                "菜单栏"
+            ],
+            "l": "Swift",
+            "s": 1,
+            "p": "2026-09-12T09:17:42Z"
         },
         {
             "n": "portdeck",
@@ -496,49 +508,9 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
             : list.length + ' 个';
     }
 
-    /* ── 语言：每个仓库一个方块 ── */
-    function renderSquares(list) {
-        var box = document.getElementById('squares'), lg = document.getElementById('legend');
-        if (!box || !lg) return;   // 改版后已移除这两块
-        if (!box) return;
-        var sorted = list.slice().sort(function (a, b) {
-            return String(a.l || 'zz').localeCompare(String(b.l || 'zz'));
-        });
-        box.style.gridTemplateColumns = 'repeat(' + Math.min(sorted.length, 10) + ',1fr)';
-        box.innerHTML = sorted.map(function (r) {
-            return '<i style="background:' + (COLORS[r.l] || 'var(--empty)') + '" title="'
-                 + esc(r.n) + (r.l ? ' · ' + esc(r.l) : '') + '"></i>';
-        }).join('');
-        var count = {};
-        list.forEach(function (r) { if (r.l) count[r.l] = (count[r.l] || 0) + 1; });
-        lg.innerHTML = Object.keys(count).sort(function (a, b) { return count[b] - count[a]; })
-            .map(function (k) {
-                return '<span><i class="sq" style="background:' + (COLORS[k] || 'var(--accent)') + '"></i>'
-                     + esc(k) + ' ' + count[k] + '</span>';
-            }).join('');
-    }
 
-    /* ── 近 12 个月 ── */
-    function renderMonths(list) {
-        var box = document.getElementById('months');
-        if (!box) return;          // 改版后已移除这两块
-        if (!box) return;
-        var now = new Date(), keys = [], b = {};
-        for (var i = 11; i >= 0; i--) {
-            var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            var k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-            keys.push(k); b[k] = 0;
-        }
-        list.forEach(function (r) { var k = String(r.p).slice(0, 7); if (k in b) b[k]++; });
-        box.innerHTML = keys.map(function (k) {
-            var n = b[k], c = n >= 3 ? 'l3' : n === 2 ? 'l2' : n === 1 ? 'l1' : '';
-            return '<i class="' + c + '" title="' + k + '：' + n + ' 个项目更新"></i>';
-        }).join('');
-        document.getElementById('m-from').textContent = keys[0];
-        document.getElementById('m-to').textContent = keys[11];
-    }
 
-    function renderAll(l) { renderWorks(l); renderSquares(l); renderMonths(l); observe(); }
+    function renderAll(l) { renderWorks(l); observe(); }
 
     /* 逐词揭示：把文本拆成 <span class="w">，用 --i 做 45ms 交错。
        同原站：只动 blur 与透明度，不做位移。 */
@@ -621,11 +593,6 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
             setTimeout(function () { f.style.width = f.dataset.w + '%'; }, still ? 0 : i * 60);
         });
     }
-    function popSquares() {
-        document.querySelectorAll('.squares i').forEach(function (s, i) {
-            setTimeout(function () { s.classList.add('on'); }, still ? 0 : i * 55);
-        });
-    }
     function revealNow(el) {
         // 后台标签页里渲染是挂起的，过渡会停在起始帧 —— 而揭示的起始帧是
         // opacity:0，整块内容因此不可见。动画不能是内容可见的前提：
@@ -663,7 +630,7 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
     /* ── Token 用量 ──
        数据来自本机 TokenTracker 的 export-public 载荷。部署时烧录快照，
        之后由 tt.sakuramu.edu.kg 覆盖；取不到就用快照，与 PROJECTS 同一套路。 */
-    var TOKENS_SNAPSHOT = {"agents":[{"cost_usd":2302.94,"id":"claude","tokens":3902104338},{"cost_usd":504.49,"id":"codex","tokens":2150488549},{"cost_usd":25.42,"id":"dsh","tokens":301377042},{"cost_usd":110.96,"id":"pi","tokens":262922126},{"cost_usd":22.82,"id":"kimi","tokens":178513403},{"cost_usd":24.73,"id":"hermes","tokens":73724259},{"cost_usd":51.97,"id":"opencode","tokens":65830878}],"app_version":"0.2.11","caveats":{"snapshot_only_agents":["hermes","opencode"],"undated_share":0.0557},"daily":{"start":"2025-09-12","tokens":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,647162,2290399,4648044,60806057,9272741,51913668,97393341,21570395,44262139,445326,48482768,438299707,178954267,178160419,414130057,320778331,206105299,261417613,7542815,1384284,109093761,112487214,277107957,96892292,197745142,54788694,115914246,173092782,79033341,140085696,321835446,173869922,162601836,37367788,341649850,294702880,351616774,206491407,194521892,299508404,274028706,64204472,121260448],"window_tokens":6548405782},"generated_at":"2026-09-11T15:00:00Z","longest_burst":{"agent":"codex","basis":"exact","day":"2026-09-01","gap_minutes":30,"seconds":21832},"peak":{"day":"2026-08-11","tokens":438299707},"range":{"days":365,"from":"2025-09-12","to":"2026-09-11"},"streak":{"as_of":"2026-09-11","current":43,"longest":43},"totals":{"active_days":43,"cost_usd":3043.34,"cost_usd_undated":96.66,"tokens":6934960595,"tokens_dated":6548405782,"tokens_undated":386554813},"tz":"Asia/Shanghai","tz_offset_minutes":480,"v":1};
+    var TOKENS_SNAPSHOT = {"agents":[{"cost_usd":2479.32,"id":"claude","tokens":4289137871},{"cost_usd":521.72,"id":"codex","tokens":2202797815},{"cost_usd":25.42,"id":"dsh","tokens":301377042},{"cost_usd":110.96,"id":"pi","tokens":262922126},{"cost_usd":22.82,"id":"kimi","tokens":178513403},{"cost_usd":24.73,"id":"hermes","tokens":73724259},{"cost_usd":51.97,"id":"opencode","tokens":65830878}],"app_version":"0.2.12","caveats":{"snapshot_only_agents":["hermes","opencode"],"undated_share":0.0524},"daily":{"start":"2025-09-13","tokens":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,647162,2290399,4648044,60806057,9272741,51913668,97393341,21570395,44262139,445326,48482768,438299707,178954267,178160419,414130057,320778331,206105299,261417613,7542815,1384284,109093761,112487214,277107957,96892292,197745142,54788694,115914246,173092782,79033341,140085696,321835446,173869922,162601836,37367788,341649850,294702880,351616774,206491407,194521892,299508404,330011174,82634100,276189589,210001562],"window_tokens":6987748581},"generated_at":"2026-09-12T12:00:00Z","longest_burst":{"agent":"codex","basis":"exact","day":"2026-09-01","gap_minutes":30,"seconds":21832},"peak":{"day":"2026-08-11","tokens":438299707},"range":{"days":365,"from":"2025-09-13","to":"2026-09-12"},"streak":{"as_of":"2026-09-12","current":44,"longest":44},"totals":{"active_days":44,"cost_usd":3236.95,"cost_usd_undated":96.66,"tokens":7374303394,"tokens_dated":6987748581,"tokens_undated":386554813},"tz":"Asia/Shanghai","tz_offset_minutes":480,"v":1};
     var TK_KEY = 'tt-v1', TK_TTL = 8 * 3600 * 1000;   // 首页 8 小时刷一次即可
     var AGENT_NAME = { claude:'Claude Code', codex:'Codex', kimi:'Kimi Code',
         opencode:'opencode', dsh:'dsh', hermes:'Hermes', pi:'Pi' };
@@ -915,7 +882,6 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
 
     renderAll(PROJECTS);
     document.querySelectorAll('[data-count]').forEach(countUp);
-    popSquares();
 
     setTimeout(function () {
         if (fired || still) return;
@@ -942,7 +908,7 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
         out.sort(function (a, b) { return new Date(b.p) - new Date(a.p); });
         renderAll(out);
         document.querySelectorAll('.work').forEach(function (e) { e.classList.add('in'); });
-        fill(document); popSquares();
+        fill(document);
     }
     var c = cached();
     if (c) merge(c);
