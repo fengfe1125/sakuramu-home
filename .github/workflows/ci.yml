@@ -20,19 +20,22 @@ jobs:
         run: |
           node --check shared/notes-render.mjs
           node --check scripts/build-notes.mjs
-          node --check scripts/build-css.mjs
+          node --check scripts/build-shared.mjs
           node --check scripts/refresh-snapshot.mjs
           node --check admin/src/index.mjs
           node --check admin/src/access.mjs
           node --check admin/src/monitor.mjs
           node --check admin/src/notify.mjs
           node --check admin/src/notes.mjs
+          node --check admin/src/hits.mjs
+          node --check hits-api/src/index.mjs
           node --check notes-api/src/index.mjs
           node --check tests/test_notes.js
           node --check tests/test_access.js
           node --check tests/test_monitor.js
           node --check tests/test_notify.js
           node --check tests/test_noteapi.js
+          node --check tests/test_hits.js
 
       - name: 渲染器回归
         run: node tests/test_notes.js
@@ -58,6 +61,12 @@ jobs:
       - name: 手记写入校验回归
         run: node tests/test_noteapi.js
 
+      # 访客上报端点是公开可写的，而 D1 的写入配额是账号级的 ——
+      # 它被刷爆会让监控的心跳一起写不进去。这一组盯的是配额闸、
+      # 「不收客户端说了不算的字段」，以及「没收到离开事件不等于停留 0 秒」。
+      - name: 访客统计回归
+        run: node tests/test_hits.js
+
       # 后台在公网上，而 Access 只挡自定义域这一条路。
       # workers.dev 和版本预览 URL 是两个不同的主机名，都绕过 Access ——
       # 这两行配置一旦被删掉或改成 true，后台就是裸奔的，必须在 CI 里钉死。
@@ -66,14 +75,14 @@ jobs:
           node -e '
             const fs = require("fs");
             let bad = 0;
-            for (const f of ["wrangler.admin.jsonc", "wrangler.notes.jsonc"]) {
+            for (const f of ["wrangler.admin.jsonc", "wrangler.notes.jsonc", "wrangler.hits.jsonc"]) {
               const c = JSON.parse(fs.readFileSync(f, "utf8").replace(/^\s*\/\/.*$/gm, ""));
               for (const k of ["workers_dev", "preview_urls"]) {
                 if (c[k] !== false) { console.error("✗ " + f + " 的 " + k + " 必须是 false，现在是 " + c[k]); bad = 1; }
               }
             }
             if (bad) process.exit(1);
-            console.log("✓ 两份 Worker 配置的 workers_dev 与 preview_urls 均为 false");
+            console.log("✓ 三份 Worker 配置的 workers_dev 与 preview_urls 均为 false");
           '
 
       # 手记渲染在 CI 里必须硬失败 —— 本地发版时它是「警告 + 继续」，
@@ -81,10 +90,35 @@ jobs:
       - name: 手记可渲染
         run: node scripts/build-notes.mjs --strict --no-remote
 
-      # 两个页面共用的那段 CSS 存在 shared/base.css，由 build-css 注入。
-      # 改了 shared/base.css 却忘了跑 npm run css，两个页面就会和源文件脱节。
-      - name: 共用样式已注入
-        run: node scripts/build-css.mjs --check
+      # 两个页面共用的样式与埋点存在 shared/，由 build-shared 注入。
+      # 改了源文件却忘了跑 npm run shared，页面就会和源文件脱节 ——
+      # 埋点脱节的表现是「一个站的停留时间莫名其妙全是空的」。
+      - name: 共用片段已注入
+        run: node scripts/build-shared.mjs --check
+
+      # connect-src 漏掉上报域名，埋点会被浏览器静默拦掉 ——
+      # 页面一切正常，只是数据没了，而且两份 _headers 是分开的，漏一份就半瘫。
+      # 这是「删掉之后一切看起来都正常」的那类配置，必须钉死。
+      - name: 埋点域名在两份 CSP 里
+        run: |
+          node -e '
+            const fs = require("fs");
+            let bad = 0;
+            for (const f of ["public/_headers", "v2/_headers"]) {
+              // 只看真正的 CSP 头那一行 —— 注释里也写着 connect-src，
+              // 直接正则抓第一处会抓到注释，于是这条断言变成永远为真的摆设
+              const line = fs.readFileSync(f, "utf8").split("\n")
+                .find(l => /^\s*Content-Security-Policy:/i.test(l));
+              if (!line) { console.error("✗ " + f + " 里找不到 CSP 头"); bad = 1; continue; }
+              const m = line.match(/connect-src[^;]*/);
+              if (!m || !m[0].includes("https://hits.sakuramu.edu.kg")) {
+                console.error("✗ " + f + " 的 connect-src 缺少 https://hits.sakuramu.edu.kg");
+                bad = 1;
+              }
+            }
+            if (bad) process.exit(1);
+            console.log("✓ 两份 CSP 都放行了上报域名");
+          '
 
       # build-notes 会就地改写 v2/index.html。如果 CI 里跑完有差异，
       # 说明提交时忘了跑 npm run notes，页面与源稿不一致。

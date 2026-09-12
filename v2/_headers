@@ -1,6 +1,8 @@
 # 见 public/_headers 的说明。两处差异：
 #   · 头像是从主站跨域引的，img-src 要放行 sakuramu.edu.kg
 #   · 手记从 notes.sakuramu.edu.kg 拉，connect-src 要放行它
+#   · 访客埋点发往 hits.sakuramu.edu.kg，同样要放行
+#     （sendBeacon 也受 connect-src 管，漏配就是静默失效）
 #
 # script-src / connect-src 里的 cloudflareinsights 是给 Cloudflare Web Analytics
 # 的 beacon 用的 —— 它由 Cloudflare 在边缘自动注入到 HTML 里，
@@ -10,4 +12,4 @@
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
   Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://sakuramu.edu.kg; connect-src 'self' https://notes.sakuramu.edu.kg https://cloudflareinsights.com; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://sakuramu.edu.kg; connect-src 'self' https://notes.sakuramu.edu.kg https://cloudflareinsights.com https://hits.sakuramu.edu.kg; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'

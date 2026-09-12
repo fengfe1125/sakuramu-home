@@ -1,6 +1,6 @@
 # sakuramu-home
 
-个人主页源码。四个站点，四个独立的 Cloudflare Worker：
+个人主页源码。五个站点，五个独立的 Cloudflare Worker：
 
 | 站点 | 目录 | 配置 | Worker | 形态 |
 |---|---|---|---|---|
@@ -8,6 +8,7 @@
 | [about.sakuramu.edu.kg](https://about.sakuramu.edu.kg) | `v2/` | `wrangler.v2.jsonc` | `sakuramu-home-v2` | 纯静态 |
 | admin.sakuramu.edu.kg | `admin/` | `wrangler.admin.jsonc` | `sakuramu-admin` | Worker + D1 + cron |
 | notes.sakuramu.edu.kg | `notes-api/` | `wrangler.notes.jsonc` | `sakuramu-notes` | Worker + D1（只读） |
+| hits.sakuramu.edu.kg | `hits-api/` | `wrangler.hits.jsonc` | `sakuramu-hits` | Worker + D1（只写） |
 
 前两个是 Cloudflare Workers [Static Assets](https://developers.cloudflare.com/workers/static-assets/)
 纯静态托管，**配置里没有 `main`**，文件由边缘节点直接分发，不消耗 Worker 调用次数。
@@ -23,11 +24,12 @@ npm test               # 渲染器回归（零依赖）
 npm run dev            # 本地预览主站 http://localhost:8787
 npm run snapshot       # 只刷新烧录的快照，不部署
 npm run notes          # 只渲染手记，不部署
-npm run css            # 只注入共用样式，不部署
+npm run shared         # 只注入共用片段（样式 + 埋点），不部署
 npm run deploy         # 刷新快照 + 部署主站
 npm run deploy:about   # 渲染手记 + 部署关于页
 npm run deploy:admin   # 部署后台
 npm run deploy:notes   # 部署手记的公开只读接口
+npm run deploy:hits    # 部署访客上报接口
 npm run admin:schema   # 把 admin/src/schema.sql 整份重跑（幂等）
 npm run admin:tail     # 看后台实时日志
 ```
@@ -210,10 +212,104 @@ https://sakuramu.edu.kg/      中断 12 分钟 · 340ms
 
 cron 本身 1440 次/天，远低于 10 万次/天的请求配额。
 
+## 访客统计
+
+后台「访客」标签页：访问次数（今日 / 7 天 / 30 天 / 累计）、每日柱状图、
+停留时长分位数、来源与国家、最近 50 条访问。
+
+站点上另外还跑着 Cloudflare Web Analytics（beacon 由 Cloudflare 在边缘自动注入），
+它**不提供停留时间**，两者互不相干，可以当交叉核对用。
+
+### 隐私边界
+
+| 记录 | 不记录 |
+|---|---|
+| 服务端时间戳 | **IP —— 一次都不落库，连哈希都不做** |
+| 站点 + 路径 | 完整 User-Agent（只用来判断是不是爬虫，判完就丢） |
+| 停留毫秒数 | 完整 referrer URL（只取主机名，查询串不出浏览器） |
+| referrer 的主机名 | Cookie / localStorage / 任何持久标识 |
+| 国家（`request.cf.country`） | 跨站、跨会话的任何关联 |
+
+埋点里那个 id 只为把「离开」事件对上「进入」那一行，**在内存里、刷新即变、不落盘**，
+30 天后跟着记录一起消失，不能用来识别人。埋点尊重 `doNotTrack` 和
+`globalPrivacyControl`，设了就一个字节都不发。
+
+**后台显示的是访问次数（PV），不是独立访客数（UV）。** 不写 Cookie、不存 IP
+就不存在诚实的 UV 口径 —— 这是上面那些「不记录」的直接后果，不是遗漏。
+
+### 为什么上报端点是独立的第五个 Worker
+
+后台整域在 Access 后面，收不了公开上报；`sakuramu-notes` 的设计前提是
+「根本没有写入代码」，加一条 POST 就把那句承诺作废了；两个静态站没有 `main`，
+加了就从零 Worker 调用变成每次访问都计费。
+
+所以 `sakuramu-hits` 是 `sakuramu-notes` 的镜像：那个没有写入代码，
+**这个没有把数据库的行交给响应的代码**。唯一的 GET 是 `/healthz`，它只跑 `SELECT 1`。
+`tests/test_hits.js` 里有几条 grep 断言钉着这个性质。
+
+### 配额自保（不能省的那部分）
+
+**D1 的写入配额是账号级的，而且从 2026-09-01 起超限会直接拒绝查询。**
+监控的心跳和访客上报共用同一份额度 —— 上报端点公开可写，被刷爆会让**监控静默停摆**，
+界面一片绿，其实早就瞎了。免费档只有 1 条限速规则（按 IP、10 秒周期），
+挡得住粗暴洪水，挡不住匀速刷。所以必须有一道自设的硬上限：
+
+- 载荷上限 1KB、字段白名单、拒绝未知字段
+- `Origin` 必须**完全相等**（不能用 `startsWith` —— `sakuramu.edu.kg.evil.com` 会蒙混过关）
+- **写入预算闸做成 SQL 子查询**，和 INSERT 在同一条语句里 ——
+  比「先读一次再判断」少一次往返，而且计数精确没有滞后窗口。
+  到顶后写 0 行，端点照常返回 204（不告诉攻击者他成功了）
+- 过半时推一条 Telegram，同一天不重复
+- 概览页显示「今日上报配额 N / 20000」
+
+写入账（D1 的口径：**写入涉及被索引的列时索引也各算一行**）：
+
+```
+INSERT visits    表 1 + id 索引 1 + ts 索引 1 = 3
+预算表 upsert    day 是 rowid，无二级索引      = 1
+UPDATE 停留时长  两列都没索引                 = 1
+预算表 upsert                                 = 1
+30 天后 DELETE                                = 3
+一次完整访问                                  = 9 行
+```
+
+闸设在 2 万「摄入行」≈ 3,300 次访问/天。最坏情况含清理约 3.5 万行/天，
+加监控的 2,300 行，账号级的 10 万行/天还剩六成。
+
+> 逃生舱：真撞上闸就换 Workers Analytics Engine（独立配额、不占 D1）。
+> 代价是读回数据要新建一枚带 Analytics 读权限的账号级 API Token，
+> 而且它只保留 3 个月 —— 「累计访问次数」会没。所以现在不用。
+> 换的时候只需要改 `hits-api/src/index.mjs` 里 `insertView` / `closeVisit` 两个函数。
+
+### 停留时间是怎么测的
+
+**累计「可见时长」，不是墙上时间。** 标签页丢在后台八小时不该算成停留八小时。
+
+`visibilitychange` → hidden 为主、`pagehide` 兜底。
+`beforeunload`/`unload` 一概不用：移动端极不可靠，而且注册它们会让页面无法进 bfcache。
+两个都监听、服务端去重 —— 不同平台各有失灵的时候，客户端判断不出自己在哪种情况里。
+
+服务端三重幂等：`ends < 4` 封顶、`dwell_ms` 单调递增（重复或倒退的值写 0 行）、
+`site` 必须对得上。close 路径**刻意不做 UPSERT** —— 它一旦能凭空造行，
+就成了第二个不受 view 约束的写入入口。宁可少记，不可乱记。
+
+> **没收到离开事件的访问，`dwell_ms` 是 `NULL`，绝不能当成 0 秒。**
+> 那会把中位数直接拉垮，而那其实是浏览器崩溃、被系统杀掉、断网。
+> 统计只对非 NULL 求分位数，并在界面上显示**样本覆盖率** ——
+> 收不到的那批偏向崩溃和秒关，所以这个数字是偏乐观的上界，不是全体中位数。
+> 覆盖率突然下滑通常意味着埋点或 CSP 出了问题。
+
+### 一个很难查的坑
+
+`sendBeacon` 的载荷**必须用 `text/plain`**。用 `application/json` 会让它变成
+「非简单请求」，浏览器先发 OPTIONS 预检 —— 而 `pagehide` 期间预检往往跑不完，
+结果是离开信标整个丢掉，**而且只在移动端丢，桌面上测不出来**。
+
 ## 共用样式
 
 首页和关于页有 **132 行逐字相同的 CSS**，存在 `shared/base.css`，
-由 `scripts/build-css.mjs` 注入两个页面的 `base:start` / `base:end` 之间。
+由 `scripts/build-shared.mjs` 注入两个页面的 `base:start` / `base:end` 之间。
+（同一个脚本也负责注入 `shared/beacon.js`。）
 改样式改那一个文件，两边同时生效。
 
 **为什么不是外链样式表**：站点的原则是「访客拿到的是单个自包含 HTML」——
@@ -225,7 +321,7 @@ cron 本身 1440 次/天，远低于 10 万次/天的请求配额。
 CSS 靠源码顺序层叠，把散落的规则收拢成一块会悄悄改变同优先级规则的胜负。
 抽完逐条比对过：两个页面的规则数、顺序、内容完全一致。
 
-CI 里 `build-css --check` 会盯着：改了 `shared/base.css` 却忘了跑 `npm run css` 就红。
+CI 里 `build-shared --check` 会盯着：改了源文件却忘了跑 `npm run shared` 就红。
 
 ## 安全响应头
 
@@ -383,7 +479,9 @@ v2/notes/*.md       手记原稿
 admin/src/          后台 Worker（路由、鉴权、探测、告警、手记校验、建表）
 admin/ui/index.html 后台界面（自包含，复用站点的设计令牌）
 notes-api/src/      手记的公开只读 Worker（只有一条 GET 路径）
-shared/base.css     首页与关于页共用的那段样式（由 build-css 注入两边）
+hits-api/src/       访客上报的只写 Worker（只有一条 POST 路径）
+shared/base.css     首页与关于页共用的那段样式（由 build-shared 注入两边）
+shared/beacon.js    访客埋点（同上）
 shared/             发版脚本与 Worker 共用的纯函数
 scripts/            发版脚本
 tests/              零依赖回归测试

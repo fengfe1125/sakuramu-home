@@ -1,0 +1,30 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+
+	// 访客上报的只写接口。刻意和其余三个 Worker 分开：
+	//   · admin 整域在 Access 后面，收不了公开上报
+	//   · notes 的设计前提是「没有写入代码」，不能在它上面加 POST
+	//   · 两个静态站没有 main，加了就从零 Worker 调用变成每次访问都计费
+	//
+	// 这个 Worker 里没有读取业务数据的代码 —— 与 notes-api 正好互为镜像。
+	"name": "sakuramu-hits",
+	"main": "hits-api/src/index.mjs",
+	"compatibility_date": "2026-09-08",
+
+	// 两扇 workers.dev 的门都关掉，和另外两个 Worker 保持一致。
+	// CI 里有一步专门盯着这两个值。
+	"workers_dev": false,
+	"preview_urls": false,
+
+	"routes": [{ "pattern": "hits.sakuramu.edu.kg", "custom_domain": true }],
+
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "sakuramu-admin",
+			"database_id": "53e7452e-e5a7-4df1-8575-3065e898c298"
+		}
+	],
+
+	"observability": { "enabled": true }
+}

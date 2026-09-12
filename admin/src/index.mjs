@@ -14,6 +14,9 @@ import {
 } from './monitor.mjs'
 import { notifyAll, sendTelegram, formatEvent } from './notify.mjs'
 import { validateNote, validSlug, suggestSlug } from './notes.mjs'
+import {
+  VISIT_RETAIN_MS, HIT_CAP, dayNum, dayToISO, summarizeDwell, fillDays, shouldAlert,
+} from './hits.mjs'
 // 与发版脚本共用同一份渲染器 —— 后台预览、后台发布、发版烧录
 // 三处输出必须逐字一致，各写一份迟早会分叉，
 // 而分叉的表现是「预览好好的，发出去不一样」。
@@ -130,9 +133,55 @@ export async function runCycle(env, now = Date.now()) {
   // 没有过期行时它写 0 行，几乎不花配额。
   // 这条必须现在就写进来，不能「以后再说」—— heartbeats 无限增长会吃满 5GB。
   stmts.push(env.DB.prepare(`DELETE FROM heartbeats WHERE ts < ?`).bind(now - HB_RETAIN_MS))
+  // 访客原始记录同样 30 天。日汇总表不清 —— 累计访问量不该跟着归零。
+  stmts.push(env.DB.prepare(`DELETE FROM visits WHERE ts < ?`).bind(now - VISIT_RETAIN_MS))
 
   await env.DB.batch(stmts)
   return { checked: due.length, events }
+}
+
+/**
+ * 把原始访问记录聚合进日汇总表。
+ *
+ * 今天和昨天各算一遍：离开事件可能迟到（用户切后台很久才回来），
+ * 只算今天会让昨天的时长统计永远缺一块。
+ * 整段重算而不是增量累加 —— 幂等，跑多少遍结果都一样。
+ */
+async function rollupVisits(env, now, ctx) {
+  const DAY = 86400_000
+  const stmts = []
+  for (const d of [dayNum(now), dayNum(now) - 1]) {
+    // 日序号转回时间窗：day 是按北京时区切的，这里要还原成 UTC 毫秒区间
+    const start = d * DAY - 8 * 3600_000
+    stmts.push(env.DB.prepare(
+      `INSERT INTO visit_daily (day,site,views,ended,dwell_sum,dwell_n)
+       SELECT ?1, site, COUNT(*), COUNT(dwell_ms), COALESCE(SUM(dwell_ms),0), COUNT(dwell_ms)
+         FROM visits WHERE ts>=?2 AND ts<?3 GROUP BY site
+       ON CONFLICT(day,site) DO UPDATE SET
+         views=excluded.views, ended=excluded.ended,
+         dwell_sum=excluded.dwell_sum, dwell_n=excluded.dwell_n`
+    ).bind(d, start, start + DAY))
+  }
+  await env.DB.batch(stmts)
+
+  // 预算过半时提醒一次。同一天不重复 ——
+  // 重复告警在这个仓库里是明确当缺陷处理的（见 monitor.mjs 的 nextState）。
+  const today = dayNum(now)
+  const [b, mark] = await env.DB.batch([
+    env.DB.prepare(`SELECT rows_written FROM visit_budget WHERE day=?`).bind(today),
+    env.DB.prepare(`SELECT v FROM meta WHERE k='hits_alert_day'`),
+  ])
+  const used = (b.results || [])[0]?.rows_written ?? 0
+  const last = Number((mark.results || [])[0]?.v ?? NaN)
+  if (shouldAlert(used, HIT_CAP, last, today)) {
+    await env.DB.prepare(`INSERT OR REPLACE INTO meta (k,v,at) VALUES ('hits_alert_day',?,?)`)
+      .bind(String(today), now).run()
+    // 推送放 waitUntil，且 sendTelegram 永不抛 —— 告警失败不能反过来搞挂 cron
+    ctx.waitUntil(sendTelegram(env,
+      '⚠️ 访客上报写入量已过半\n'
+      + `今日 ${used} / ${HIT_CAP} 行\n`
+      + '到顶后上报会停止写库，监控不受影响。'))
+  }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -251,6 +300,62 @@ async function handleV1(request, env, ctx, url, identity) {
     if (!m) return json({ error: 'not_found' }, 404)
     // 只探不写库：手动点一下不该影响 fail_streak，更不该触发告警
     return json({ dry_run: true, result: await probe(m, Date.now()) })
+  }
+
+  if (path === '/v1/visits' && method === 'GET') {
+    const today = dayNum(now)
+    const from = today - 29
+    const winStart = now - 7 * 86400_000      // 来源/国家/时长统计看最近 7 天
+
+    const [daily, total, dwells, recent, refs, countries, budget] = await env.DB.batch([
+      // 次数类一律查日汇总（30 行），不扫原始表 —— 后台是会被反复打开的，
+      // 每次扫几万行会把 500 万行/天的读配额烧掉。
+      env.DB.prepare(`SELECT day,site,views,ended FROM visit_daily WHERE day>=? ORDER BY day`).bind(from),
+      env.DB.prepare(`SELECT COALESCE(SUM(views),0) AS all_time FROM visit_daily`),
+      // 时长要算分位数，必须拿到原始值。LIMIT 是保险丝。
+      env.DB.prepare(
+        `SELECT dwell_ms FROM visits WHERE ts>=? AND dwell_ms IS NOT NULL
+          ORDER BY dwell_ms LIMIT 5000`).bind(winStart),
+      env.DB.prepare(
+        `SELECT ts,site,path,ref,country,dwell_ms FROM visits ORDER BY ts DESC LIMIT 50`),
+      env.DB.prepare(
+        `SELECT COALESCE(NULLIF(ref,''),'(直接访问)') AS src, COUNT(*) AS n
+           FROM visits WHERE ts>=? GROUP BY src ORDER BY n DESC LIMIT 12`).bind(winStart),
+      env.DB.prepare(
+        `SELECT COALESCE(country,'(未知)') AS c, COUNT(*) AS n
+           FROM visits WHERE ts>=? GROUP BY c ORDER BY n DESC LIMIT 12`).bind(winStart),
+      env.DB.prepare(`SELECT rows_written FROM visit_budget WHERE day=?`).bind(today),
+    ])
+
+    const rows = daily.results || []
+    const bySite = {}
+    for (const r of rows) {
+      (bySite[r.site] = bySite[r.site] || []).push({ day: r.day, views: r.views })
+    }
+    const sum = (f) => rows.filter(f).reduce((a, r) => a + r.views, 0)
+    const win = (d) => sum(r => r.day > today - d)
+    const views7 = win(7)
+    const ended7 = rows.filter(r => r.day > today - 7).reduce((a, r) => a + r.ended, 0)
+
+    return json({
+      now,
+      today: { day: today, iso: dayToISO(today), views: sum(r => r.day === today) },
+      views_7d: views7,
+      views_30d: win(30),
+      all_time: (total.results || [])[0]?.all_time ?? 0,
+      // 每个站一条 30 天的柱子，中间没人来的日子补 0 ——
+      // 不补的话柱子会挤在一起，看上去像「天天有人来」
+      daily: Object.fromEntries(Object.entries(bySite)
+        .map(([site, rs]) => [site, fillDays(rs, from, today)])),
+      // 只对收到离开事件的那部分算分位数，同时报出覆盖率。
+      // 收不到的那批偏向崩溃和秒关，所以这是个偏乐观的上界，不是全体中位数。
+      dwell: summarizeDwell((dwells.results || []).map(r => r.dwell_ms), views7),
+      dwell_window_days: 7,
+      recent: recent.results || [],
+      refs: refs.results || [],
+      countries: countries.results || [],
+      budget: { used: (budget.results || [])[0]?.rows_written ?? 0, cap: HIT_CAP },
+    })
   }
 
   // ── 手记 ───────────────────────────────────────────────
@@ -431,6 +536,14 @@ export default {
     } catch (e) {
       note = 'error: ' + String(e && e.message || e).slice(0, 300)
       console.log('cron error: ' + (e && e.stack || e))
+    }
+
+    // 日汇总 + 预算告警。约每 10 分钟跑一次 ——
+    // 每分钟重算会写 5,760 行/天，为了一个几乎不变的数字花掉 6% 的写入配额不值。
+    // 重算是幂等的（从原始表整段重新聚合），偶尔跳过一轮没有影响。
+    if (new Date(t0).getUTCMinutes() % 10 === 0) {
+      try { await rollupVisits(env, t0, ctx) }
+      catch (e) { console.log('rollup error: ' + (e && e.message)) }
     }
 
     try {

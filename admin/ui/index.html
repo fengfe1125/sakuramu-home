@@ -132,6 +132,25 @@ button.act:disabled { opacity:.45; cursor:default; }
 .inc-head { display:flex; justify-content:space-between; gap:var(--s3); align-items:baseline; }
 .inc-cause { color:var(--ink-faint); font-size:13px; font-family:'JetBrains Mono',ui-monospace,monospace; }
 
+/* 柱状图。复用 .beat 是为了白嫖 #tip 那套事件委托（它按 data-tip 挂在 .beat 上），
+   只需要把定高改成可变高。 */
+.bar.chart { height:52px; gap:3px; align-items:flex-end; }
+.bar.chart .beat { width:9px; height:auto; align-self:flex-end; min-height:2px;
+                   background:var(--chip); }
+.bar.chart .beat.has { background:var(--accent); }
+.vstat { display:flex; gap:var(--s5); flex-wrap:wrap; margin-bottom:var(--s4); }
+.vstat div { min-width:80px; }
+.vstat .n { font-size:26px; font-weight:500; letter-spacing:-.02em; display:block;
+            font-family:'JetBrains Mono',ui-monospace,monospace; }
+.vstat .l { font-size:12px; color:var(--ink-faint); }
+.vlist { font-size:13px; font-family:'JetBrains Mono',ui-monospace,monospace; }
+.vlist > div { display:flex; justify-content:space-between; gap:var(--s3);
+               padding:3px 0; border-bottom:1px solid var(--rule); }
+.vlist > div:last-child { border-bottom:0; }
+.vlist .t { color:var(--ink-faint); white-space:nowrap; }
+.two { display:grid; grid-template-columns:1fr 1fr; gap:var(--s5); }
+@media (max-width:640px) { .two { grid-template-columns:1fr; } }
+
 /* ── 手记编辑器 ── */
 .note-row { display:flex; justify-content:space-between; align-items:baseline; gap:var(--s3);
             padding:var(--s2) 0; border-bottom:1px solid var(--rule); cursor:pointer; font-size:15px; }
@@ -186,6 +205,7 @@ a:hover { border-bottom-color:currentColor; }
     <button data-tab="overview" class="on">概览</button>
     <button data-tab="monitors">监控</button>
     <button data-tab="incidents">事件</button>
+    <button data-tab="visits">访客</button>
     <button data-tab="notes">手记</button>
     <button data-tab="settings">设置</button>
 </nav>
@@ -196,6 +216,7 @@ a:hover { border-bottom-color:currentColor; }
     <div class="row"><span class="k">Access 配置</span><span class="v" id="access">…</span></div>
     <div class="row"><span class="k">邮箱白名单</span><span class="v" id="allow">…</span></div>
     <div class="row"><span class="k">定时探测</span><span class="v" id="cron">…</span></div>
+    <div class="row"><span class="k">访客上报配额</span><span class="v" id="hitbudget">…</span></div>
     <div class="row"><span class="k">服务端时间</span><span class="v" id="now">…</span></div>
     <div class="btns"><button class="act" id="tgtest">发一条测试告警</button></div>
     <div class="msg" id="tgmsg"></div>
@@ -209,6 +230,24 @@ a:hover { border-bottom-color:currentColor; }
 <section class="panel" id="tab-incidents" hidden>
     <h2>事件</h2>
     <div id="incs"><p class="empty">读取中…</p></div>
+</section>
+
+<section class="panel" id="tab-visits" hidden>
+    <h2>访问</h2>
+    <div id="vsum"><p class="empty">读取中…</p></div>
+    <div id="vcharts"></div>
+
+    <h2 style="margin-top:var(--s6)">停留时长</h2>
+    <div id="vdwell"><p class="empty">读取中…</p></div>
+
+    <div class="two" style="margin-top:var(--s6)">
+        <div><h2>来源（近 7 天）</h2><div id="vrefs" class="vlist"></div></div>
+        <div><h2>国家（近 7 天）</h2><div id="vcountries" class="vlist"></div></div>
+    </div>
+
+    <h2 style="margin-top:var(--s6)">最近访问</h2>
+    <div id="vrecent" class="vlist"></div>
+    <p class="hint" id="vprivacy"></p>
 </section>
 
 <section class="panel" id="tab-notes" hidden>
@@ -302,6 +341,7 @@ $('nav').addEventListener('click', function (e) {
     }
     if (b.dataset.tab === 'incidents') loadIncidents();
     if (b.dataset.tab === 'notes') loadNotes();
+    if (b.dataset.tab === 'visits') loadVisits();
 });
 
 // ── 提示框 ──
@@ -536,6 +576,105 @@ fetch('/v1/whoami', { headers: { accept: 'application/json' } })
         else el.textContent = '身份未通过校验（HTTP ' + x.s + '）';
     })
     .catch(function () { $('who').textContent = '身份接口不可达'; });
+
+// ── 访客 ──
+// 刻意不进 30 秒轮询：这些查询要扫原始表，按那个频率打会白烧读配额。
+// 只在切到这个标签页时拉一次。
+function dur(ms) {
+    if (ms == null) return '—';
+    var s = Math.round(ms / 1000);
+    if (s < 60) return s + ' 秒';
+    var m = Math.floor(s / 60);
+    return m + ' 分 ' + (s % 60) + ' 秒';
+}
+var SITE_CN = { home: '主页', about: '关于页' };
+
+function loadVisits() {
+    return api('GET', '/v1/visits').then(function (d) {
+        renderVisits(d);
+        set('hitbudget', d.budget.used + ' / ' + d.budget.cap + ' 行',
+            d.budget.used >= d.budget.cap ? 'bad'
+              : d.budget.used > d.budget.cap / 2 ? 'warn' : 'ok');
+    }).catch(function () {
+        $('vsum').innerHTML = '<p class="empty">读不到访问数据。</p>';
+    });
+}
+
+function renderVisits(d) {
+    $('vsum').innerHTML = '<div class="vstat">'
+        + stat(d.today.views, '今天')
+        + stat(d.views_7d, '近 7 天')
+        + stat(d.views_30d, '近 30 天')
+        + stat(d.all_time, '累计')
+        + '</div>';
+
+    var sites = Object.keys(d.daily || {});
+    if (!sites.length) {
+        $('vcharts').innerHTML = '<p class="empty">还没有访问记录。埋点刚上线的话，等一会儿再看。</p>';
+    } else {
+        $('vcharts').innerHTML = sites.map(function (site) {
+            var days = d.daily[site];
+            var max = 1;
+            for (var i = 0; i < days.length; i++) if (days[i].views > max) max = days[i].views;
+            var bars = days.map(function (x) {
+                // data-tip 让它白嫖全局那套悬浮提示
+                return '<div class="beat' + (x.views ? ' has' : '') + '"'
+                     + ' style="height:' + Math.max(2, Math.round(x.views / max * 100)) + '%"'
+                     + ' data-tip="' + esc(x.iso + '\n' + x.views + ' 次访问') + '"></div>';
+            }).join('');
+            return '<div class="mon"><div class="mon-top"><div class="mon-name">'
+                 + esc(SITE_CN[site] || site) + '</div></div>'
+                 + '<div class="bar-scroll"><div class="bar chart">' + bars + '</div></div>'
+                 + '<div class="mon-foot"><span>近 30 天共 <b>'
+                 + days.reduce(function (a, x) { return a + x.views; }, 0) + '</b> 次</span></div></div>';
+        }).join('');
+    }
+
+    var w = d.dwell;
+    if (w.sampled === 0) {
+        $('vdwell').innerHTML = '<p class="empty">近 ' + d.dwell_window_days
+            + ' 天还没有收到过离开事件。</p>';
+    } else {
+        $('vdwell').innerHTML = '<div class="vstat">'
+            + stat(dur(w.p50), '中位停留')
+            + stat(dur(w.p90), 'p90')
+            + stat(dur(w.mean), '平均')
+            + stat(w.coverage == null ? '—' : Math.round(w.coverage * 100) + '%', '样本覆盖')
+            + '</div>'
+            // 这句必须写在界面上：收不到离开事件的那批偏向崩溃、被系统杀掉和秒关，
+            // 所以有样本那部分的中位数是偏乐观的上界，不是全体中位数。
+            + '<p class="hint">近 ' + d.dwell_window_days + ' 天，样本 ' + w.sampled + '/'
+            + w.views + '。没收到离开事件的那部分不计入 —— 它们偏向崩溃、被系统杀掉和秒关，'
+            + '所以这个数字是偏乐观的上界。覆盖率突然下滑通常意味着埋点或 CSP 出了问题。</p>';
+    }
+
+    $('vrefs').innerHTML = rank(d.refs, 'src') || '<p class="empty">暂无</p>';
+    $('vcountries').innerHTML = rank(d.countries, 'c') || '<p class="empty">暂无</p>';
+
+    $('vrecent').innerHTML = (d.recent || []).length
+        ? d.recent.map(function (r) {
+            return '<div><span>' + esc(SITE_CN[r.site] || r.site) + esc(r.path)
+                 + (r.ref ? ' <span class="t">← ' + esc(r.ref) + '</span>' : '')
+                 + (r.country ? ' <span class="t">' + esc(r.country) + '</span>' : '')
+                 + '</span><span class="t">' + clock(r.ts) + ' · ' + dur(r.dwell_ms) + '</span></div>';
+          }).join('')
+        : '<p class="empty">暂无</p>';
+
+    $('vprivacy').textContent =
+        '只记录页面、时间、停留时长、来源站点和国家。不存 IP、不存 User-Agent、'
+        + '不写 Cookie、不做跨站关联。这里显示的是访问次数（PV），不是独立访客数 —— '
+        + '不碰 IP 和 Cookie 就没有诚实的独立访客口径。原始记录保留 30 天，之后只留每日汇总。';
+}
+
+function stat(n, label) {
+    return '<div><span class="n">' + esc(n) + '</span><span class="l">' + esc(label) + '</span></div>';
+}
+function rank(rows, key) {
+    if (!rows || !rows.length) return '';
+    return rows.map(function (r) {
+        return '<div><span>' + esc(r[key]) + '</span><span class="t">' + r.n + '</span></div>';
+    }).join('');
+}
 
 // ── 手记 ──
 var curSlug = null, curIsNew = false;

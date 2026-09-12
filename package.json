@@ -3,17 +3,18 @@
   "private": true,
   "scripts": {
     "dev": "wrangler dev",
-    "test": "node tests/test_notes.js && node tests/test_access.js && node tests/test_monitor.js && node tests/test_notify.js && node tests/test_noteapi.js",
+    "test": "node tests/test_notes.js && node tests/test_access.js && node tests/test_monitor.js && node tests/test_notify.js && node tests/test_noteapi.js && node tests/test_hits.js",
     "snapshot": "node scripts/refresh-snapshot.mjs",
     "notes": "node scripts/build-notes.mjs",
-    "deploy": "npm run css && npm run snapshot && wrangler deploy",
-    "deploy:about": "npm run css && npm run notes && wrangler deploy --config wrangler.v2.jsonc",
+    "deploy": "npm run shared && npm run snapshot && wrangler deploy",
+    "deploy:about": "npm run shared && npm run notes && wrangler deploy --config wrangler.v2.jsonc",
     "versions": "wrangler versions list",
     "deploy:admin": "wrangler deploy --config wrangler.admin.jsonc",
     "admin:schema": "wrangler d1 execute sakuramu-admin --remote --config wrangler.admin.jsonc --file=./admin/src/schema.sql",
     "admin:tail": "wrangler tail sakuramu-admin --config wrangler.admin.jsonc --format pretty",
     "deploy:notes": "wrangler deploy --config wrangler.notes.jsonc",
-    "css": "node scripts/build-css.mjs"
+    "shared": "node scripts/build-shared.mjs",
+    "deploy:hits": "wrangler deploy --config wrangler.hits.jsonc"
   },
   "devDependencies": {
     "wrangler": "^4"
