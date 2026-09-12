@@ -94,15 +94,25 @@ Zero Trust 控制台（中文界面：**访问控制** → **应用程序**）�
 
 ### 登录用的是哪个身份
 
-这个账号唯一配置的 IdP 是 **Cloudflare 账号登录**（type `cloudflare`，
-且 `restrict_to_account_members: true`），**不是** One-time PIN ——
-账号里根本没开那个。所以策略里的邮箱必须是 **Cloudflare 账号的邮箱**，
-填别的会出现「认证通过但被策略拒绝」，而且这个失败模式很不直观。
+**One-time PIN**（邮箱验证码），刻意选的：后台访问与 Cloudflare 账号互相独立，
+换一台没登录 Cloudflare 的设备也能进。应用的 `allowed_idps` 里只有它一项，
+所以「应用即时身份验证」生效，打开就是输验证码，不经过选择页。
 
-这不算让步：Cloudflare 账号本来就是这整套基础设施的信任根，
-拿到它的人可以直接删掉 Worker、D1 和 DNS，后台的权限严格小于它。
-用它守后台不引入新弱点，代价是后台访问与 Cloudflare 账号绑定。
-想要两者独立，就得先在 Zero Trust 里开 One-time PIN，再把策略邮箱改回去。
+> One-time PIN 在 Zero Trust 里是「**一个 IdP 都没配时的兜底**」——
+> 只要配了任何一个别的 IdP，它就不再出现，得去
+> **集成 → 标识提供程序 → 添加标识提供程序 → One-time PIN** 显式加上。
+> 这一条不翻文档基本猜不到。
+
+**策略里的邮箱必须和登录方式断言出来的邮箱一致。** 两者不一致会产生
+「认证通过、随后被策略拒绝」的组合，而界面上看不出是哪一步出的问题 ——
+这是这套东西最不直观的失败模式。当前是 One-time PIN，所以策略邮箱
+就是收验证码的那个邮箱；若改回 Cloudflare 账号登录，就得同步换成
+Cloudflare 账号的邮箱。
+
+`ACCESS_ALLOWED_EMAILS` 这道 Worker 侧的闸也要跟着一起改，
+否则会出现「Access 放行了、Worker 拒绝」的另一半错配。
+好消息是这一半有迹可循：`/healthz` 会报出白名单开没开，
+Worker 日志里也会记下 `access denied: email`。
 
 邮箱白名单是第二道闸，属 PII 不进仓库，用 secret 下发：
 
