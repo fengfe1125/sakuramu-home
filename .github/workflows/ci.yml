@@ -24,9 +24,11 @@ jobs:
           node --check admin/src/index.mjs
           node --check admin/src/access.mjs
           node --check admin/src/monitor.mjs
+          node --check admin/src/notify.mjs
           node --check tests/test_notes.js
           node --check tests/test_access.js
           node --check tests/test_monitor.js
+          node --check tests/test_notify.js
 
       - name: 渲染器回归
         run: node tests/test_notes.js
@@ -40,6 +42,11 @@ jobs:
       # 抖动误报只在特定状态序列下才出现，肉眼审不出来。
       - name: 监控状态机回归
         run: node tests/test_monitor.js
+
+      # 告警跑在 cron 里，它抛异常会把监控本身搞挂 ——
+      # 等于「因为报警器坏了所以把消防栓也拆了」。这一组盯的就是「永不抛」。
+      - name: 告警回归
+        run: node tests/test_notify.js
 
       # 后台在公网上，而 Access 只挡自定义域这一条路。
       # workers.dev 和版本预览 URL 是两个不同的主机名，都绕过 Access ——

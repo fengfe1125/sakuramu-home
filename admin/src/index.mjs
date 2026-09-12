@@ -12,6 +12,7 @@ import { verifyAccess, accessConfig } from './access.mjs'
 import {
   isDue, nextState, probe, uptime, validateMonitor, MONITOR_DEFAULTS, HB_RETAIN_MS,
 } from './monitor.mjs'
+import { notifyAll, sendTelegram, formatEvent } from './notify.mjs'
 
 // 后台是这个账号上权限最高的一个面，安全响应头在这里最值。
 const SECURITY_HEADERS = {
@@ -76,13 +77,27 @@ export async function runCycle(env, now = Date.now()) {
   // 单个 reject 把其余监控的结果一起丢掉。
   const probes = await Promise.all(due.map(m => probe(m, now)))
   const byId = new Map(due.map(m => [m.id, m]))
+  const decisions = probes.map(p => {
+    const m = byId.get(p.id)
+    return { p, m, ns: nextState(m, p.ok) }
+  })
+
+  // 恢复通知要写「中断了多久」，就得知道故障是什么时候开始的。
+  // 只在真的有监控恢复时才查这一次，平时一条额外查询都不会发。
+  const recovering = decisions.filter(d => d.ns.event === 'recovered').map(d => d.m.id)
+  let downSince = new Map()
+  if (recovering.length) {
+    const q = await env.DB.prepare(
+      `SELECT monitor_id, MIN(started_at) AS started_at FROM incidents
+        WHERE resolved_at IS NULL AND monitor_id IN (${recovering.map(() => '?').join(',')})
+        GROUP BY monitor_id`
+    ).bind(...recovering).all()
+    downSince = new Map((q.results || []).map(r => [r.monitor_id, r.started_at]))
+  }
 
   const stmts = []
   const events = []
-  for (const p of probes) {
-    const m = byId.get(p.id)
-    const ns = nextState(m, p.ok)
-
+  for (const { p, m, ns } of decisions) {
     stmts.push(env.DB.prepare(
       `INSERT OR REPLACE INTO heartbeats (monitor_id,ts,ok,ms,code,err) VALUES (?,?,?,?,?,?)`
     ).bind(m.id, p.ts, p.ok ? 1 : 0, p.ms, p.code, p.err))
@@ -102,7 +117,7 @@ export async function runCycle(env, now = Date.now()) {
       stmts.push(env.DB.prepare(
         `UPDATE incidents SET resolved_at=? WHERE monitor_id=? AND resolved_at IS NULL`
       ).bind(p.ts, m.id))
-      events.push({ kind: 'recovered', monitor: m, probe: p })
+      events.push({ kind: 'recovered', monitor: m, probe: p, downSince: downSince.get(m.id) || null })
     }
   }
 
@@ -233,6 +248,17 @@ async function handleV1(request, env, ctx, url, identity) {
     return json({ dry_run: true, result: await probe(m, Date.now()) })
   }
 
+  // 发一条测试告警。没有它，验证告警链路就只能等真出故障，
+  // 或者故意把监控指向不存在的域名 —— 而那会污染心跳记录和事件历史。
+  if (path === '/v1/notify/test' && method === 'POST') {
+    const r = await sendTelegram(env,
+      '🔧 沐枫站点监控 · 测试消息\n'
+      + '看到这条说明告警链路是通的。\n'
+      + new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC')
+    return r.ok ? json({ sent: true })
+                : json({ sent: false, why: r.why }, r.why === 'not_configured' ? 503 : 502)
+  }
+
   if (path === '/v1/incidents' && method === 'GET') {
     const r = await env.DB.prepare(`
       SELECT i.id, i.monitor_id, m.name AS monitor_name, i.started_at, i.resolved_at, i.cause
@@ -316,8 +342,12 @@ export default {
       const r = await runCycle(env, t0)
       note = `checked=${r.checked} events=${r.events.length}`
       if (r.checked) console.log('cron: ' + note)
-      // 告警在第 3 步接上。放 waitUntil 里，
-      // 因为推送失败绝不能让 cron 失败 —— 否则监控本身成了故障源。
+
+      // 推送放 waitUntil 里，且 notifyAll 自己永不抛异常。
+      // 告警链路失败绝不能反过来把监控搞挂 ——
+      // 那等于「因为报警器坏了所以把消防栓也拆了」。
+      // 数据已经在上面写完了，推送成不成功都不影响记录的完整性。
+      if (r.events.length) ctx.waitUntil(notifyAll(env, r.events))
     } catch (e) {
       note = 'error: ' + String(e && e.message || e).slice(0, 300)
       console.log('cron error: ' + (e && e.stack || e))

@@ -163,6 +163,8 @@ a:hover { border-bottom-color:currentColor; }
     <div class="row"><span class="k">邮箱白名单</span><span class="v" id="allow">…</span></div>
     <div class="row"><span class="k">定时探测</span><span class="v" id="cron">…</span></div>
     <div class="row"><span class="k">服务端时间</span><span class="v" id="now">…</span></div>
+    <div class="btns"><button class="act" id="tgtest">发一条测试告警</button></div>
+    <div class="msg" id="tgmsg"></div>
 </section>
 
 <section class="panel" id="tab-monitors" hidden>
@@ -464,6 +466,15 @@ fetch('/v1/whoami', { headers: { accept: 'application/json' } })
         else el.textContent = '身份未通过校验（HTTP ' + x.s + '）';
     })
     .catch(function () { $('who').textContent = '身份接口不可达'; });
+
+$('tgtest').addEventListener('click', function (e) {
+    e.preventDefault();
+    var m = $('tgmsg');
+    m.textContent = '发送中…'; m.className = 'msg';
+    api('POST', '/v1/notify/test')
+        .then(function () { m.textContent = '已发送，去 Telegram 看一眼'; m.className = 'msg ok'; })
+        .catch(function (err) { m.textContent = '发送失败：' + err.message; m.className = 'msg bad'; });
+});
 
 loadHealth();
 loadMonitors();
