@@ -14,6 +14,7 @@
 ## 常用命令
 
 ```bash
+npm test               # 渲染器回归（零依赖）
 npm run dev            # 本地预览主站 http://localhost:8787
 npm run snapshot       # 只刷新烧录的快照，不部署
 npm run notes          # 只渲染手记，不部署
@@ -77,6 +78,15 @@ date: 2026-09-11
 按 front-matter 里的 `date` 倒序排，最新的在最上面。
 支持标题、加粗、强调、行内代码、链接、列表、引用、代码块、分割线。
 
+渲染器本体在 `shared/notes-render.mjs`，**发版脚本与（将来的）后台 Worker 共用同一份** ——
+后台预览、后台发布、发版烧录三处输出必须逐字一致，各写一份迟早会分叉，
+而分叉的表现是「预览好好的，发出去不一样」。
+
+链接有**协议白名单**：无协议的相对路径、锚点一律放行，有协议则只认
+`http` / `https` / `mailto`。不在白名单的**不生成链接，原样输出文本** ——
+否则 `[点这里](javascript:...)` 会渲染成一个可点击的 `javascript:` 链接，
+等内容来自网页表单时那就是自己域名上的存储型 XSS。
+
 **Markdown 在发版时渲染成 HTML 直接写进页面**，不在浏览器里解析：
 
 - 站点的原则是「无构建步骤、单个自包含 HTML」——
@@ -96,5 +106,7 @@ public/avatar.jpg   头像
 public/status.json  状态气泡，直接编辑即可生效
 v2/index.html       关于页（手记渲染进这里）
 v2/notes/*.md       手记原稿
+shared/             发版脚本与 Worker 共用的纯函数
 scripts/            发版脚本
+tests/              零依赖回归测试
 ```

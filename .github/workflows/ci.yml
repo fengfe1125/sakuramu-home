@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 零 npm 依赖：不跑 npm ci，这个仓库只有 wrangler 一个 devDependency，
+      # 而下面的检查一个都用不到它。
+      - name: 语法检查
+        run: |
+          node --check shared/notes-render.mjs
+          node --check scripts/build-notes.mjs
+          node --check scripts/refresh-snapshot.mjs
+          node --check tests/test_notes.js
+
+      - name: 渲染器回归
+        run: node tests/test_notes.js
+
+      # 手记渲染在 CI 里必须硬失败 —— 本地发版时它是「警告 + 继续」，
+      # 那是为了不让手记问题挡住整站发布；但 CI 的职责恰恰是把问题拦下来。
+      - name: 手记可渲染
+        run: node scripts/build-notes.mjs --strict
+
+      # build-notes 会就地改写 v2/index.html。如果 CI 里跑完有差异，
+      # 说明提交时忘了跑 npm run notes，页面与源稿不一致。
+      - name: 页面与源稿一致
+        run: git diff --exit-code -- v2/index.html

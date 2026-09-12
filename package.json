@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "wrangler dev",
+    "test": "node tests/test_notes.js",
     "snapshot": "node scripts/refresh-snapshot.mjs",
     "notes": "node scripts/build-notes.mjs",
     "deploy": "npm run snapshot && wrangler deploy",
