@@ -224,12 +224,6 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
     color:var(--accent); text-decoration:none;
     border-bottom:1px solid transparent; transition:border-color .2s var(--ease-ui); }
 .foot a:hover { border-bottom-color:var(--accent); }
-/* 源码是次要信息，压到与顶栏同一档，不和邮箱抢注意力 */
-.foot .src { font-size:.68rem; color:var(--ink-faint);
-    transition:color .2s var(--ease-ui),border-color .2s var(--ease-ui); }
-.foot .src:hover { color:var(--accent); border-bottom-color:var(--accent); }
-.foot .src .go { display:inline-block; }
-.foot .src:hover .go { transform:translate(2px,-2px); }
 
 /* ═════ 10. 揭示动画 ═════
    只做 blur + 透明度，不做位移（位移会让整页滚动时抖一下）。
@@ -341,8 +335,6 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
         <span class="k">Get in touch</span>
         <a href="mailto:su@sakuramu.edu.kg">su@sakuramu.edu.kg</a>
     </div>
-    <a class="src" href="https://github.com/fengfe1125/sakuramu-home"
-       target="_blank" rel="noopener">本站源码 <span class="go">↗</span></a>
 </footer>
 
 </div>
