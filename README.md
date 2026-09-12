@@ -83,14 +83,26 @@ Access 是绑在**自定义域**上的，只拦 `admin.sakuramu.edu.kg`。
 
 ### 配置 Access
 
-一次性，在 Zero Trust 控制台：
+已配置好，值在 `wrangler.admin.jsonc` 的 `vars` 里。要重建的话，在
+Zero Trust 控制台（中文界面：**访问控制** → **应用程序**）：
 
-1. Access → Applications → Add an application → **Self-hosted**
-2. Application domain 填 `admin.sakuramu.edu.kg`
-3. Policy：Action **Allow**，Include → **Emails** → 自己的邮箱
-4. 登录方式用内置的 **One-time PIN**（邮箱验证码），不必接第三方
-5. 记下 Team domain 和 Application Audience (AUD) tag，填进
-   `wrangler.admin.jsonc` 的 `vars`，重新部署
+1. **新建应用程序** → **自托管和私有** → **公共 DNS** → 继续
+2. 目标：子域 `admin`，域 `sakuramu.edu.kg`
+3. Access 策略：挂一条 Action **允许**、Include **电子邮件** 的策略
+4. 身份验证：选中唯一的 IdP，**应用即时身份验证**会自动打开
+5. 把 Team domain 和 AUD 填进 `vars`，重新部署
+
+### 登录用的是哪个身份
+
+这个账号唯一配置的 IdP 是 **Cloudflare 账号登录**（type `cloudflare`，
+且 `restrict_to_account_members: true`），**不是** One-time PIN ——
+账号里根本没开那个。所以策略里的邮箱必须是 **Cloudflare 账号的邮箱**，
+填别的会出现「认证通过但被策略拒绝」，而且这个失败模式很不直观。
+
+这不算让步：Cloudflare 账号本来就是这整套基础设施的信任根，
+拿到它的人可以直接删掉 Worker、D1 和 DNS，后台的权限严格小于它。
+用它守后台不引入新弱点，代价是后台访问与 Cloudflare 账号绑定。
+想要两者独立，就得先在 Zero Trust 里开 One-time PIN，再把策略邮箱改回去。
 
 邮箱白名单是第二道闸，属 PII 不进仓库，用 secret 下发：
 

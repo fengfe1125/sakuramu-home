@@ -57,8 +57,8 @@
 	// 邮箱白名单是 PII，不进公开仓库，用 secret 下发：
 	//   npx wrangler secret put ACCESS_ALLOWED_EMAILS --config wrangler.admin.jsonc
 	"vars": {
-		"ACCESS_TEAM_DOMAIN": "",
-		"ACCESS_AUD": ""
+		"ACCESS_TEAM_DOMAIN": "curly-firefly-072f.cloudflareaccess.com",
+		"ACCESS_AUD": "27303a49c193c25267056bc5d5201505f8c95fdda3d86053d5bfce25c8ea98dc"
 	},
 
 	// 定时探测的 cron 在第 2 步才加 —— 现在加上就是每分钟跑一次空函数，
