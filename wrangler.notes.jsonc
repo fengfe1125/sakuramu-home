@@ -1,0 +1,29 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+
+	// 手记的公开只读接口。刻意和后台分成两个 Worker：
+	// Access 按域名整域拦截，后台域上开不出公开路径，
+	// 而给 Access 配 Bypass 正是「以后被手滑打开的口子」。
+	//
+	// 这个 Worker 里没有任何写入代码 —— 不是靠判断拦着，是物理上没有。
+	"name": "sakuramu-notes",
+	"main": "notes-api/src/index.mjs",
+	"compatibility_date": "2026-09-08",
+
+	// 同样两扇门都关掉。这里虽然本来就只读，但保持三份配置一致，
+	// 免得将来有人照着这份复制出一个有写入能力的 Worker。
+	"workers_dev": false,
+	"preview_urls": false,
+
+	"routes": [{ "pattern": "notes.sakuramu.edu.kg", "custom_domain": true }],
+
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "sakuramu-admin",
+			"database_id": "53e7452e-e5a7-4df1-8575-3065e898c298"
+		}
+	],
+
+	"observability": { "enabled": true }
+}

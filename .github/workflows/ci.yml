@@ -25,10 +25,13 @@ jobs:
           node --check admin/src/access.mjs
           node --check admin/src/monitor.mjs
           node --check admin/src/notify.mjs
+          node --check admin/src/notes.mjs
+          node --check notes-api/src/index.mjs
           node --check tests/test_notes.js
           node --check tests/test_access.js
           node --check tests/test_monitor.js
           node --check tests/test_notify.js
+          node --check tests/test_noteapi.js
 
       - name: 渲染器回归
         run: node tests/test_notes.js
@@ -48,28 +51,39 @@ jobs:
       - name: 告警回归
         run: node tests/test_notify.js
 
+      # 手记的 HTML 永远由服务端 render(md) 生成。一旦接受客户端提交的 HTML，
+      # 转义的责任就交给了浏览器端，那条链上任何一环失守都是公开站点上的存储型 XSS。
+      # 这条性质靠代码审查守不住，必须有断言钉着。
+      - name: 手记写入校验回归
+        run: node tests/test_noteapi.js
+
       # 后台在公网上，而 Access 只挡自定义域这一条路。
       # workers.dev 和版本预览 URL 是两个不同的主机名，都绕过 Access ——
       # 这两行配置一旦被删掉或改成 true，后台就是裸奔的，必须在 CI 里钉死。
       - name: 后台没有 workers.dev 后门
         run: |
           node -e '
-            const t = require("fs").readFileSync("wrangler.admin.jsonc", "utf8");
-            const c = JSON.parse(t.replace(/^\s*\/\/.*$/gm, ""));
+            const fs = require("fs");
             let bad = 0;
-            for (const k of ["workers_dev", "preview_urls"]) {
-              if (c[k] !== false) { console.error("✗ wrangler.admin.jsonc 的 " + k + " 必须是 false，现在是 " + c[k]); bad = 1; }
+            for (const f of ["wrangler.admin.jsonc", "wrangler.notes.jsonc"]) {
+              const c = JSON.parse(fs.readFileSync(f, "utf8").replace(/^\s*\/\/.*$/gm, ""));
+              for (const k of ["workers_dev", "preview_urls"]) {
+                if (c[k] !== false) { console.error("✗ " + f + " 的 " + k + " 必须是 false，现在是 " + c[k]); bad = 1; }
+              }
             }
             if (bad) process.exit(1);
-            console.log("✓ workers_dev 与 preview_urls 均为 false");
+            console.log("✓ 两份 Worker 配置的 workers_dev 与 preview_urls 均为 false");
           '
 
       # 手记渲染在 CI 里必须硬失败 —— 本地发版时它是「警告 + 继续」，
       # 那是为了不让手记问题挡住整站发布；但 CI 的职责恰恰是把问题拦下来。
       - name: 手记可渲染
-        run: node scripts/build-notes.mjs --strict
+        run: node scripts/build-notes.mjs --strict --no-remote
 
       # build-notes 会就地改写 v2/index.html。如果 CI 里跑完有差异，
       # 说明提交时忘了跑 npm run notes，页面与源稿不一致。
+      #
+      # 注意上一步用了 --no-remote：CI 不该依赖外网，而且远端已发布的文章
+      # 本来就不在仓库里，带远端跑必然产生 diff。
       - name: 页面与源稿一致
         run: git diff --exit-code -- v2/index.html

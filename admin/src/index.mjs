@@ -13,6 +13,11 @@ import {
   isDue, nextState, probe, uptime, validateMonitor, MONITOR_DEFAULTS, HB_RETAIN_MS,
 } from './monitor.mjs'
 import { notifyAll, sendTelegram, formatEvent } from './notify.mjs'
+import { validateNote, validSlug, suggestSlug } from './notes.mjs'
+// 与发版脚本共用同一份渲染器 —— 后台预览、后台发布、发版烧录
+// 三处输出必须逐字一致，各写一份迟早会分叉，
+// 而分叉的表现是「预览好好的，发出去不一样」。
+import { render } from '../../shared/notes-render.mjs'
 
 // 后台是这个账号上权限最高的一个面，安全响应头在这里最值。
 const SECURITY_HEADERS = {
@@ -246,6 +251,81 @@ async function handleV1(request, env, ctx, url, identity) {
     if (!m) return json({ error: 'not_found' }, 404)
     // 只探不写库：手动点一下不该影响 fail_streak，更不该触发告警
     return json({ dry_run: true, result: await probe(m, Date.now()) })
+  }
+
+  // ── 手记 ───────────────────────────────────────────────
+
+  // 预览走和发布完全相同的 render()，而不是在浏览器里另写一份。
+  // 预览与实际产出不一致是这类编辑器最常见也最难查的问题。
+  if (path === '/v1/preview' && method === 'POST') {
+    const body = await readJSON(request)
+    if (body === null || typeof body.md !== 'string') return json({ error: 'bad_json' }, 400)
+    if (body.md.length > 200_000) return json({ error: 'too_long' }, 413)
+    return json({ html: render(body.md) })
+  }
+
+  if (path === '/v1/notes' && method === 'GET') {
+    const r = await env.DB.prepare(
+      `SELECT slug,title,date,published,created_at,updated_at,length(md) AS md_len
+         FROM notes ORDER BY date DESC, slug`).all()
+    return json({ notes: r.results || [] })
+  }
+
+  const noteOne = path.match(/^\/v1\/notes\/([^/]+)$/)
+  if (noteOne) {
+    const slug = decodeURIComponent(noteOne[1])
+    if (!validSlug(slug)) return json({ error: 'bad_slug' }, 400)
+
+    if (method === 'GET') {
+      const r = await env.DB.prepare(`SELECT * FROM notes WHERE slug=?`).bind(slug).first()
+      return r ? json(r) : json({ error: 'not_found' }, 404)
+    }
+
+    // PUT 是新建或整篇覆盖。html 永远由服务端生成：
+    // 存客户端提交的 HTML 等于把转义的责任交给浏览器端，
+    // 那条链上任何一环失守都是自己域名上的存储型 XSS。
+    if (method === 'PUT') {
+      const body = await readJSON(request)
+      if (body === null) return json({ error: 'bad_json' }, 400)
+      const v = validateNote(body)
+      if (!v.ok) return json({ error: 'invalid', detail: v.errors }, 400)
+      const html = render(v.value.md)
+      const pub = v.value.published ?? 0
+      const r = await env.DB.prepare(
+        `INSERT INTO notes (slug,title,date,md,html,published,created_at,updated_at)
+         VALUES (?1,?2,?3,?4,?5,?6,?7,?7)
+         ON CONFLICT(slug) DO UPDATE SET
+           title=?2, date=?3, md=?4, html=?5, published=?6, updated_at=?7
+         RETURNING slug,title,date,published,created_at,updated_at`
+      ).bind(slug, v.value.title, v.value.date, v.value.md, html, pub, now).first()
+      return json(r)
+    }
+
+    if (method === 'PATCH') {
+      const body = await readJSON(request)
+      if (body === null) return json({ error: 'bad_json' }, 400)
+      const v = validateNote(body, { partial: true })
+      if (!v.ok) return json({ error: 'invalid', detail: v.errors }, 400)
+      const cols = { ...v.value }
+      if ('md' in cols) cols.html = render(cols.md)   // 改了正文就重渲染，绝不让两者脱节
+      cols.updated_at = now
+      const sets = Object.keys(cols).map(k => `${k}=?`).join(',')
+      const r = await env.DB.prepare(
+        `UPDATE notes SET ${sets} WHERE slug=?
+         RETURNING slug,title,date,published,created_at,updated_at`
+      ).bind(...Object.values(cols), slug).first()
+      return r ? json(r) : json({ error: 'not_found' }, 404)
+    }
+
+    if (method === 'DELETE') {
+      const r = await env.DB.prepare(`DELETE FROM notes WHERE slug=?`).bind(slug).run()
+      return r.meta?.changes > 0 ? json({ deleted: slug }) : json({ error: 'not_found' }, 404)
+    }
+  }
+
+  if (path === '/v1/slug' && method === 'POST') {
+    const body = await readJSON(request)
+    return json({ slug: suggestSlug(body && body.title) })
   }
 
   // 发一条测试告警。没有它，验证告警链路就只能等真出故障，

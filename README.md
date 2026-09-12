@@ -1,12 +1,13 @@
 # sakuramu-home
 
-个人主页源码。三个站点，三个独立的 Cloudflare Worker：
+个人主页源码。四个站点，四个独立的 Cloudflare Worker：
 
 | 站点 | 目录 | 配置 | Worker | 形态 |
 |---|---|---|---|---|
 | [sakuramu.edu.kg](https://sakuramu.edu.kg) | `public/` | `wrangler.jsonc` | `restless-mountain-3c35` | 纯静态 |
 | [about.sakuramu.edu.kg](https://about.sakuramu.edu.kg) | `v2/` | `wrangler.v2.jsonc` | `sakuramu-home-v2` | 纯静态 |
-| admin.sakuramu.edu.kg | `admin/` | `wrangler.admin.jsonc` | `sakuramu-admin` | Worker + D1 |
+| admin.sakuramu.edu.kg | `admin/` | `wrangler.admin.jsonc` | `sakuramu-admin` | Worker + D1 + cron |
+| notes.sakuramu.edu.kg | `notes-api/` | `wrangler.notes.jsonc` | `sakuramu-notes` | Worker + D1（只读） |
 
 前两个是 Cloudflare Workers [Static Assets](https://developers.cloudflare.com/workers/static-assets/)
 纯静态托管，**配置里没有 `main`**，文件由边缘节点直接分发，不消耗 Worker 调用次数。
@@ -25,6 +26,7 @@ npm run notes          # 只渲染手记，不部署
 npm run deploy         # 刷新快照 + 部署主站
 npm run deploy:about   # 渲染手记 + 部署关于页
 npm run deploy:admin   # 部署后台
+npm run deploy:notes   # 部署手记的公开只读接口
 npm run admin:schema   # 把 admin/src/schema.sql 整份重跑（幂等）
 npm run admin:tail     # 看后台实时日志
 ```
@@ -244,6 +246,65 @@ cron 本身 1440 次/天，远低于 10 万次/天的请求配额。
 
 ## 写手记
 
+两种写法，同一套渲染器，产出逐字一致。
+
+### 在网页上写（推荐）
+
+后台 → 手记 → 写一篇新的。左边 Markdown，右边实时预览，写完点「发布」。
+关于页最多一分钟后自动更新，不用部署。
+
+预览走服务端的 `/v1/preview`，调的是和发布**完全相同**的 `render()`，
+而不是在浏览器里另写一份 —— 「预览好好的，发出去不一样」是这类编辑器
+最常见也最难查的问题。
+
+### 在本地写
+
+往 `v2/notes/` 放一个 `.md` 文件，然后 `npm run deploy:about`。
+
+```markdown
+---
+title: 标题
+date: 2026-09-11
+---
+
+正文……
+```
+
+### 两者怎么合起来
+
+`npm run notes` 会把**本地 `.md`** 和**后台已发布的文章**合并后烧录进
+`v2/index.html`，同 slug 以远端为准。关于页加载时再从
+`notes.sakuramu.edu.kg/notes.json` 拉一次覆盖。
+
+**为什么两份都要有：** 页面里那份 HTML 是兜底，手记服务不可达时访客看到的就是它。
+只存在于运行时的文章一旦服务挂掉就整篇消失 —— 而那恰恰是最需要兜底的时刻。
+拉取失败、载荷版本不认识、结构不合法，全部静默回落，访客看不出区别。
+
+CI 里用 `--no-remote` 跑：不该依赖外网，而且远端已发布的文章本来就不在仓库里。
+
+### 为什么公开接口是独立的一个 Worker
+
+Cloudflare Access 按域名整域拦截，`admin.sakuramu.edu.kg` 上开不出公开路径。
+唯一的办法是给 Access 配 Bypass —— 而那正是「以后被手滑打开的口子」。
+
+所以换成物理隔离：`sakuramu-notes` 里**根本没有写入代码**，也没有后台的任何逻辑。
+它不是靠一个 `if` 拦着不许写，是压根不会写。只认 `GET /notes.json` 一条路径，
+其余一律 404。
+
+它刻意**不用 `caches.default`**：这个查询只有几行，边缘缓存省不下什么，
+却换来两个很难推理的问题 —— 缓存条目跨部署存活（部署完还在发旧代码的响应），
+以及发了文章要等整个 TTL 才可见。保留 ETag + 60 秒 max-age 就够了。
+
+### 手记的 HTML 永远由服务端生成
+
+接口只收 Markdown，`html` 是未知字段会被**明确拒绝**。
+存客户端提交的 HTML 等于把转义的责任交给浏览器端，
+那条链上任何一环失守都是自己域名上的存储型 XSS。
+
+信任链是「Access 会话 → 服务端 render（转义 + 协议白名单）→ D1 → 公开只读」。
+`tests/test_noteapi.js` 有断言钉着这条性质 —— 靠代码审查守不住。
+
+
 往 `v2/notes/` 放一个 `.md` 文件，然后 `npm run deploy:about`。
 
 ```markdown
@@ -286,8 +347,9 @@ public/avatar.jpg   头像
 public/status.json  状态气泡，直接编辑即可生效
 v2/index.html       关于页（手记渲染进这里）
 v2/notes/*.md       手记原稿
-admin/src/          后台 Worker（index.mjs 路由、access.mjs 鉴权、schema.sql 建表）
+admin/src/          后台 Worker（路由、鉴权、探测、告警、手记校验、建表）
 admin/ui/index.html 后台界面（自包含，复用站点的设计令牌）
+notes-api/src/      手记的公开只读 Worker（只有一条 GET 路径）
 shared/             发版脚本与 Worker 共用的纯函数
 scripts/            发版脚本
 tests/              零依赖回归测试

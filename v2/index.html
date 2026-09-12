@@ -351,6 +351,7 @@ dl a:hover { border-bottom-color:var(--accent); }
 
 <section>
     <div class="label reveal">Notes <span class="zh">手记</span></div>
+    <div id="notes">
 <!-- notes:start -->
         <article class="note reveal">
             <div class="note-meta">2026年9月11日 周五</div>
@@ -368,6 +369,7 @@ dl a:hover { border-bottom-color:var(--accent); }
             </div>
         </article>
         <!-- notes:end -->
+    </div>
 </section>
 
 <section class="col">
@@ -429,6 +431,60 @@ dl a:hover { border-bottom-color:var(--accent); }
         if (fired) return;
         document.querySelectorAll('.reveal:not(.in)').forEach(revealNow);
     }, 2500);
+
+    /* ── 手记：运行时覆盖，拿不到就用烧录的那份 ──
+       页面里已经烧录了一份完整的手记 HTML，所以这段只是「让它更新」，
+       不是「让它出现」。任何一步失败都静默 return，访客看到的仍是烧录内容。
+       与首页的 TOKENS_SNAPSHOT 覆盖同一套语义。 */
+    var N_KEY = 'notes-v1', N_TTL = 3600 * 1000;   // 发文章不是高频操作，1 小时足够
+
+    function renderNotes(list) {
+        var box = document.getElementById('notes');
+        if (!box || !list.length) return;
+        var esc = function (x) {
+            return String(x == null ? '' : x).replace(/[&<>"']/g, function (c) {
+                return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c];
+            });
+        };
+        box.innerHTML = list.map(function (n) {
+            /* 注意 class 里直接带 in：绝不让内容的可见性依赖动画。
+               后台标签页里 rAF 和 CSS 过渡都是暂停的，
+               任何以 opacity:0 起步再等动画的写法，都会留下一片空白。 */
+            return '<article class="note reveal in">'
+                 + '<div class="note-meta">' + esc(n.date_cn || n.date) + '</div>'
+                 + '<h2 class="note-title">' + esc(n.title) + '</h2>'
+                 /* html 是服务端用同一个 render() 生成并转义过的，
+                    绝不接受客户端提交的 HTML —— 那条链上任何一环失守
+                    都是自己域名上的存储型 XSS。 */
+                 + '<div class="note-body">' + n.html + '</div>'
+                 + '</article>';
+        }).join('');
+    }
+
+    function usableNotes(d) {
+        return d && d.v === 1 && Array.isArray(d.notes)
+            && d.notes.every(function (n) { return n && typeof n.html === 'string' && n.title; })
+            ? d.notes : null;
+    }
+
+    (function loadNotes() {
+        try {
+            var c = JSON.parse(localStorage.getItem(N_KEY) || 'null');
+            if (c && Date.now() - c.t < N_TTL) {
+                var cached = usableNotes(c.d);
+                if (cached) { renderNotes(cached); return; }
+            }
+        } catch (e) {}
+        fetch('https://notes.sakuramu.edu.kg/notes.json', { cache: 'no-cache' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+                var list = usableNotes(d);
+                if (!list) return;                       /* 版本不认识就不动，保留烧录内容 */
+                renderNotes(list);
+                try { localStorage.setItem(N_KEY, JSON.stringify({ t: Date.now(), d: d })); } catch (e) {}
+            })
+            .catch(function () {});                      /* 静默：手记服务挂了不该让关于页跟着挂 */
+    })();
 
     /* 逐字揭示：中文按单字拆，拉丁词整体保留 */
     function splitWords(el) {

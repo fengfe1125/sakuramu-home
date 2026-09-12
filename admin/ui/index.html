@@ -132,6 +132,39 @@ button.act:disabled { opacity:.45; cursor:default; }
 .inc-head { display:flex; justify-content:space-between; gap:var(--s3); align-items:baseline; }
 .inc-cause { color:var(--ink-faint); font-size:13px; font-family:'JetBrains Mono',ui-monospace,monospace; }
 
+/* ── 手记编辑器 ── */
+.note-row { display:flex; justify-content:space-between; align-items:baseline; gap:var(--s3);
+            padding:var(--s2) 0; border-bottom:1px solid var(--rule); cursor:pointer; font-size:15px; }
+.note-row:last-child { border-bottom:0; }
+.note-row:hover { background:var(--hover); }
+.note-row.on { color:var(--accent); }
+.note-row .meta { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px;
+                  color:var(--ink-faint); white-space:nowrap; }
+.badge { font-size:11px; letter-spacing:.05em; padding:1px var(--s1);
+         background:var(--chip); color:var(--ink-faint); }
+.badge.pub { color:var(--ok); }
+
+#editor { margin-top:var(--s5); }
+#md { width:100%; min-height:340px; resize:vertical; line-height:1.85;
+      font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13.5px; }
+.split { display:grid; grid-template-columns:1fr 1fr; gap:var(--s4); align-items:start; }
+@media (max-width:760px) { .split { grid-template-columns:1fr; } }
+#preview { border:1px solid var(--rule); padding:var(--s3); min-height:340px;
+           max-height:60vh; overflow:auto; font-size:14.5px; line-height:1.9; }
+#preview h3,#preview h4,#preview h5 { margin-top:var(--s3); font-weight:500; }
+#preview p { margin-top:var(--s2); color:var(--ink-soft); }
+#preview p:first-child { margin-top:0; }
+#preview code { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:.85em;
+                background:var(--chip); padding:1px 3px; }
+#preview pre { margin-top:var(--s2); padding:var(--s2); background:var(--chip); overflow-x:auto; }
+#preview pre code { background:none; padding:0; }
+#preview blockquote { margin-top:var(--s2); padding-left:var(--s3);
+                      border-left:2px solid var(--rule-strong); color:var(--ink-faint); }
+#preview ul,#preview ol { margin-top:var(--s2); padding-left:1.4em; color:var(--ink-soft); }
+#preview a { color:var(--accent); }
+#preview img { max-width:100%; }
+.hint { font-size:12px; color:var(--ink-faint); margin-top:var(--s1); }
+
 footer { margin-top:var(--s8); padding-top:var(--s4); border-top:1px solid var(--rule);
          color:var(--ink-faint); font-size:13px; }
 a { color:var(--accent); text-decoration:none; border-bottom:1px solid transparent;
@@ -153,6 +186,7 @@ a:hover { border-bottom-color:currentColor; }
     <button data-tab="overview" class="on">概览</button>
     <button data-tab="monitors">监控</button>
     <button data-tab="incidents">事件</button>
+    <button data-tab="notes">手记</button>
     <button data-tab="settings">设置</button>
 </nav>
 
@@ -175,6 +209,41 @@ a:hover { border-bottom-color:currentColor; }
 <section class="panel" id="tab-incidents" hidden>
     <h2>事件</h2>
     <div id="incs"><p class="empty">读取中…</p></div>
+</section>
+
+<section class="panel" id="tab-notes" hidden>
+    <h2>手记</h2>
+    <div id="notelist"><p class="empty">读取中…</p></div>
+    <div class="btns"><button class="act" id="newnote">写一篇新的</button></div>
+
+    <div id="editor" hidden>
+        <form class="mon-form">
+            <div><label for="n-title">标题</label><input id="n-title" maxlength="120"></div>
+            <div><label for="n-date">日期</label><input id="n-date" type="date"></div>
+            <div><label for="n-slug">标识（URL 用，小写字母数字连字符）</label><input id="n-slug" maxlength="80"></div>
+        </form>
+        <div class="split" style="margin-top:var(--s3)">
+            <div>
+                <label for="md">正文（Markdown）</label>
+                <textarea id="md" spellcheck="false"></textarea>
+                <div class="hint">中英文之间自动补空格，首段首字自动下沉。</div>
+            </div>
+            <div>
+                <label>预览</label>
+                <!-- 预览走服务端的 /v1/preview，和发布用的是同一个 render()。
+                     在浏览器里另写一份渲染，迟早会出现「预览好好的，发出去不一样」。 -->
+                <div id="preview"></div>
+            </div>
+        </div>
+        <div class="btns">
+            <button class="act" id="n-save">保存草稿</button>
+            <button class="act" id="n-pub">发布</button>
+            <button class="act" id="n-unpub" hidden>撤回为草稿</button>
+            <button class="act danger" id="n-del" hidden>删除</button>
+            <button class="act" id="n-close">关闭</button>
+        </div>
+        <div class="msg" id="n-msg"></div>
+    </div>
 </section>
 
 <section class="panel" id="tab-settings" hidden>
@@ -232,6 +301,7 @@ $('nav').addEventListener('click', function (e) {
         $('tab-' + tabs[i].dataset.tab).hidden = tabs[i] !== b;
     }
     if (b.dataset.tab === 'incidents') loadIncidents();
+    if (b.dataset.tab === 'notes') loadNotes();
 });
 
 // ── 提示框 ──
@@ -466,6 +536,116 @@ fetch('/v1/whoami', { headers: { accept: 'application/json' } })
         else el.textContent = '身份未通过校验（HTTP ' + x.s + '）';
     })
     .catch(function () { $('who').textContent = '身份接口不可达'; });
+
+// ── 手记 ──
+var curSlug = null, curIsNew = false;
+
+function loadNotes() {
+    return api('GET', '/v1/notes').then(function (d) {
+        var l = d.notes || [];
+        if (!l.length) { $('notelist').innerHTML = '<p class="empty">还没有手记。</p>'; return; }
+        $('notelist').innerHTML = l.map(function (n) {
+            return '<div class="note-row' + (n.slug === curSlug ? ' on' : '') + '" data-slug="' + esc(n.slug) + '">'
+                 + '<span>' + esc(n.title) + '</span>'
+                 + '<span class="meta">' + esc(n.date) + ' · '
+                 + '<span class="badge' + (n.published ? ' pub' : '') + '">'
+                 + (n.published ? '已发布' : '草稿') + '</span></span></div>';
+        }).join('');
+    }).catch(function () { $('notelist').innerHTML = '<p class="empty">读不到手记。</p>'; });
+}
+
+$('notelist').addEventListener('click', function (e) {
+    var row = e.target.closest('.note-row');
+    if (!row) return;
+    openNote(row.dataset.slug);
+});
+
+function openNote(slug) {
+    api('GET', '/v1/notes/' + encodeURIComponent(slug)).then(function (n) {
+        curSlug = n.slug; curIsNew = false;
+        $('n-title').value = n.title; $('n-date').value = n.date;
+        $('n-slug').value = n.slug; $('n-slug').disabled = true;
+        $('md').value = n.md;
+        $('n-pub').hidden = !!n.published;
+        $('n-unpub').hidden = !n.published;
+        $('n-del').hidden = false;
+        $('editor').hidden = false;
+        say('');
+        preview();
+        loadNotes();
+        $('editor').scrollIntoView({ block: 'nearest' });
+    }).catch(function (err) { say(err.message, 'bad'); });
+}
+
+$('newnote').addEventListener('click', function (e) {
+    e.preventDefault();
+    curSlug = null; curIsNew = true;
+    $('n-title').value = ''; $('n-slug').value = ''; $('n-slug').disabled = false;
+    $('n-date').value = new Date().toISOString().slice(0, 10);
+    $('md').value = '';
+    $('n-pub').hidden = false; $('n-unpub').hidden = true; $('n-del').hidden = true;
+    $('editor').hidden = false; $('preview').innerHTML = ''; say('');
+    $('n-title').focus();
+});
+
+$('n-close').addEventListener('click', function (e) {
+    e.preventDefault(); $('editor').hidden = true; curSlug = null; loadNotes();
+});
+
+function say(t, cls) { var m = $('n-msg'); m.textContent = t; m.className = 'msg ' + (cls || ''); }
+
+// 预览防抖。每敲一个字就请求一次服务端毫无必要，也白烧配额。
+var pvTimer = null;
+function preview() {
+    clearTimeout(pvTimer);
+    pvTimer = setTimeout(function () {
+        var md = $('md').value;
+        if (!md.trim()) { $('preview').innerHTML = ''; return; }
+        api('POST', '/v1/preview', { md: md })
+            .then(function (d) { $('preview').innerHTML = d.html; })
+            .catch(function () { /* 预览失败不打扰，继续写就是了 */ });
+    }, 400);
+}
+$('md').addEventListener('input', preview);
+
+// 标题变化时顺手给个 slug 建议，但只在新建且用户没自己填过时
+$('n-title').addEventListener('input', function () {
+    if (!curIsNew || $('n-slug').dataset.touched) return;
+    api('POST', '/v1/slug', { title: $('n-title').value })
+        .then(function (d) { if (!$('n-slug').dataset.touched) $('n-slug').value = d.slug; })
+        .catch(function () {});
+});
+$('n-slug').addEventListener('input', function () { $('n-slug').dataset.touched = '1'; });
+
+function saveNote(published) {
+    var slug = (curSlug || $('n-slug').value || '').trim();
+    if (!/^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/.test(slug)) {
+        say('标识只能用小写字母、数字和连字符，且不能以连字符开头或结尾', 'bad'); return;
+    }
+    var body = {
+        title: $('n-title').value, date: $('n-date').value,
+        md: $('md').value, published: published ? 1 : 0,
+    };
+    say('保存中…');
+    api('PUT', '/v1/notes/' + encodeURIComponent(slug), body).then(function (n) {
+        curSlug = n.slug; curIsNew = false; $('n-slug').disabled = true;
+        $('n-pub').hidden = !!n.published; $('n-unpub').hidden = !n.published;
+        $('n-del').hidden = false;
+        say(n.published ? '已发布，关于页一分钟内更新' : '草稿已保存', 'ok');
+        loadNotes();
+    }).catch(function (err) { say(err.message, 'bad'); });
+}
+$('n-save').addEventListener('click', function (e) { e.preventDefault(); saveNote(false); });
+$('n-pub').addEventListener('click', function (e) { e.preventDefault(); saveNote(true); });
+$('n-unpub').addEventListener('click', function (e) { e.preventDefault(); saveNote(false); });
+
+$('n-del').addEventListener('click', function (e) {
+    e.preventDefault();
+    if (!curSlug || !confirm('删除《' + $('n-title').value + '》？不可恢复。')) return;
+    api('DELETE', '/v1/notes/' + encodeURIComponent(curSlug)).then(function () {
+        $('editor').hidden = true; curSlug = null; loadNotes();
+    }).catch(function (err) { say(err.message, 'bad'); });
+});
 
 $('tgtest').addEventListener('click', function (e) {
     e.preventDefault();
