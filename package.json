@@ -3,12 +3,15 @@
   "private": true,
   "scripts": {
     "dev": "wrangler dev",
-    "test": "node tests/test_notes.js",
+    "test": "node tests/test_notes.js && node tests/test_access.js",
     "snapshot": "node scripts/refresh-snapshot.mjs",
     "notes": "node scripts/build-notes.mjs",
     "deploy": "npm run snapshot && wrangler deploy",
     "deploy:about": "npm run notes && wrangler deploy --config wrangler.v2.jsonc",
-    "versions": "wrangler versions list"
+    "versions": "wrangler versions list",
+    "deploy:admin": "wrangler deploy --config wrangler.admin.jsonc",
+    "admin:schema": "wrangler d1 execute sakuramu-admin --remote --config wrangler.admin.jsonc --file=./admin/src/schema.sql",
+    "admin:tail": "wrangler tail sakuramu-admin --config wrangler.admin.jsonc --format pretty"
   },
   "devDependencies": {
     "wrangler": "^4"

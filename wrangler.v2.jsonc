@@ -6,6 +6,9 @@
 	"name": "sakuramu-home-v2",
 	"compatibility_date": "2026-09-08",
 	"assets": { "directory": "./v2", "not_found_handling": "none" },
+	// 写了 routes 时 workers_dev 默认就是 false，但那是隐式的 ——
+	// 哪天为了调试把 routes 注释掉，workers.dev 就会自己冒出来。显式写死。
+	"workers_dev": false,
 	"routes": [{ "pattern": "about.sakuramu.edu.kg", "custom_domain": true }],
 	"observability": { "enabled": true }
 }

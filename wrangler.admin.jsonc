@@ -1,0 +1,67 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+
+	// ⚠️ 这是管理后台，和两个静态站是三个独立 Worker。
+	//    主站  restless-mountain-3c35  sakuramu.edu.kg
+	//    关于  sakuramu-home-v2        about.sakuramu.edu.kg
+	//    后台  sakuramu-admin          admin.sakuramu.edu.kg   ← 本文件
+	//
+	// 千万别给前两个加 main —— 它们没有 main 才是零 Worker 调用。
+	"name": "sakuramu-admin",
+	"main": "admin/src/index.mjs",
+	"compatibility_date": "2026-09-08",
+
+	// ══════════════════════════════════════════════════════════════
+	// 整个方案里最要紧的两行。
+	//
+	// Cloudflare Access 是绑在「自定义域」上的，只拦 admin.sakuramu.edu.kg。
+	// 而 Worker 默认还有两个 workers.dev 主机名，两个都完全绕开 Access：
+	//   workers_dev   →  sakuramu-admin.<子域>.workers.dev
+	//   preview_urls  →  <版本号>-sakuramu-admin.<子域>.workers.dev
+	// 它们是两个不同的主机名，关掉前者不会关掉后者。
+	//
+	// 部署后必须实测这两条都不可达，返回 200 就说明后台在裸奔。
+	// ══════════════════════════════════════════════════════════════
+	"workers_dev": false,
+	"preview_urls": false,
+
+	"routes": [{ "pattern": "admin.sakuramu.edu.kg", "custom_domain": true }],
+
+	"assets": {
+		"directory": "./admin/ui",
+		"binding": "ASSETS",
+
+		// "none"：没匹配上的路径不做 SPA 回退。
+		// 不能用 single-page-application —— 那会让 /healthz、/v1/* 拿到 index.html，
+		// 请求根本到不了 Worker。
+		"not_found_handling": "none",
+
+		// 每个请求都先进 Worker，再由 Worker 决定要不要转给静态资源。
+		// 默认是反过来的（资源优先），那样后台页面会绕过 index.js 里统一加的
+		// 安全响应头和 no-store。后台流量极小，多出来的调用数不值一提。
+		"run_worker_first": true
+	},
+
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "sakuramu-admin",
+			"database_id": "53e7452e-e5a7-4df1-8575-3065e898c298"
+		}
+	],
+
+	// Access 的两个标识符都不是机密（知道它们不能帮你伪造令牌），
+	// 放进仓库反而让配置自解释：万一哪天丢了，这里还写着本来该是什么。
+	// 留空 = access.js 判定「未配置」= 所有 /v1/* 一律 503，绝不放行。
+	//
+	// 邮箱白名单是 PII，不进公开仓库，用 secret 下发：
+	//   npx wrangler secret put ACCESS_ALLOWED_EMAILS --config wrangler.admin.jsonc
+	"vars": {
+		"ACCESS_TEAM_DOMAIN": "",
+		"ACCESS_AUD": ""
+	},
+
+	// 定时探测的 cron 在第 2 步才加 —— 现在加上就是每分钟跑一次空函数，
+	// 还白占掉每账号只有 5 个的触发器名额之一。
+	"observability": { "enabled": true }
+}

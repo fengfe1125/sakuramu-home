@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>后台 · 沐枫</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* 令牌逐字取自 public/index.html —— 后台和站点是同一套观感，零圆角。 */
+:root {
+    --paper:#F4F2EA; --sheet:#FBFAF5; --ink:#1A1C16;
+    --ink-soft:rgba(26,28,22,.78); --ink-faint:rgba(26,28,22,.52);
+    --rule:rgba(26,28,22,.10); --rule-strong:rgba(26,28,22,.18);
+    --accent:#B24E33; --hover:rgba(178,78,51,.06); --chip:rgba(26,28,22,.045);
+
+    /* 后台新增：站点本体没有表单和状态色 */
+    --ok:#4E7A52; --warn:#B8894A;
+
+    --s1:4px; --s2:8px; --s3:16px; --s4:32px; --s5:40px;
+    --s6:48px; --s7:64px; --s8:80px;
+    --ease-ui:cubic-bezier(.4,0,.2,1);
+}
+@media (prefers-color-scheme:dark) {
+    :root {
+        --paper:#131410; --sheet:#1A1C15; --ink:#EDEAE0;
+        --ink-soft:rgba(237,234,224,.80); --ink-faint:rgba(237,234,224,.50);
+        --rule:rgba(237,234,224,.11); --rule-strong:rgba(237,234,224,.18);
+        --accent:#E08A6C; --hover:rgba(224,138,108,.08); --chip:rgba(237,234,224,.06);
+        --ok:#7FA982; --warn:#D0A96B;
+    }
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    background:var(--paper); color:var(--ink);
+    font-family:'DM Sans','Noto Serif SC',-apple-system,serif;
+    font-size:16px; line-height:1.9; -webkit-font-smoothing:antialiased;
+}
+.wrap { max-width:760px; margin:0 auto; padding:var(--s7) var(--s4) var(--s8); }
+
+header { border-bottom:1px solid var(--rule); padding-bottom:var(--s4); }
+h1 { font-size:22px; font-weight:500; letter-spacing:-.01em; }
+.sub { color:var(--ink-faint); font-size:14px; margin-top:var(--s1); }
+
+nav { display:flex; gap:var(--s4); margin-top:var(--s5); flex-wrap:wrap; }
+nav span { font-size:14px; color:var(--ink-faint); position:relative; padding-bottom:var(--s1); }
+nav span.on { color:var(--ink); border-bottom:1px solid var(--accent); }
+
+section { margin-top:var(--s6); }
+h2 { font-size:13px; font-weight:500; letter-spacing:.08em; text-transform:uppercase;
+     color:var(--ink-faint); margin-bottom:var(--s3); }
+
+.row { display:flex; justify-content:space-between; align-items:baseline; gap:var(--s3);
+       padding:var(--s2) 0; border-bottom:1px solid var(--rule); font-size:15px; }
+.row:last-child { border-bottom:0; }
+.k { color:var(--ink-soft); }
+.v { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; color:var(--ink); }
+.v.ok   { color:var(--ok); }
+.v.bad  { color:var(--accent); }
+.v.warn { color:var(--warn); }
+
+.dot { display:inline-block; width:7px; height:7px; margin-right:var(--s1);
+       background:currentColor; vertical-align:baseline; }
+
+.note { background:var(--chip); padding:var(--s3); font-size:14px;
+        color:var(--ink-soft); line-height:1.8; border-left:2px solid var(--rule-strong); }
+.note code { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12.5px; }
+.soon { color:var(--ink-faint); font-size:14px; }
+footer { margin-top:var(--s8); padding-top:var(--s4); border-top:1px solid var(--rule);
+         color:var(--ink-faint); font-size:13px; }
+a { color:var(--accent); text-decoration:none; border-bottom:1px solid transparent;
+    transition:border-color .2s var(--ease-ui); }
+a:hover { border-bottom-color:currentColor; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+    <h1>后台</h1>
+    <!-- 默认就写着「读取中」而不是留空：拿不到数据时页面也说得清自己的状态。
+         绝不让内容的可见性依赖于脚本跑通。 -->
+    <div class="sub" id="who">正在确认身份…</div>
+</header>
+
+<nav>
+    <span class="on">概览</span>
+    <span>监控</span>
+    <span>事件</span>
+    <span>手记</span>
+    <span>设置</span>
+</nav>
+
+<section>
+    <h2>自检</h2>
+    <div class="row"><span class="k">数据库</span><span class="v" id="db">…</span></div>
+    <div class="row"><span class="k">Access 配置</span><span class="v" id="access">…</span></div>
+    <div class="row"><span class="k">邮箱白名单</span><span class="v" id="allow">…</span></div>
+    <div class="row"><span class="k">服务端时间</span><span class="v" id="now">…</span></div>
+</section>
+
+<section>
+    <h2>进度</h2>
+    <p class="soon">第 1 步已完成：后台骨架、Access 校验、数据库连通。<br>
+       监控、事件、手记三块在后续步骤接上。</p>
+</section>
+
+<footer>
+    沐枫的管理后台 · <a href="https://sakuramu.edu.kg">主页</a> ·
+    <a href="https://about.sakuramu.edu.kg">关于</a>
+</footer>
+
+</div>
+<script>
+// 两个请求都不做重试、不做兜底渲染：这个页面在 Access 后面，
+// 拿不到数据就是真出问题了，得让它显眼地说出来。
+function set(id, text, cls) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'v' + (cls ? ' ' + cls : '');
+}
+
+fetch('/healthz', { headers: { accept: 'application/json' } })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+        set('db', d.db, d.db === 'ok' ? 'ok' : 'bad');
+        set('access', d.access === 'configured' ? '已配置' : '未配置（写接口全部拒绝）',
+            d.access === 'configured' ? 'ok' : 'warn');
+        set('allow', d.email_allowlist === 'on' ? '已开启' : '未设置（仅依赖 Access 策略）',
+            d.email_allowlist === 'on' ? 'ok' : 'warn');
+        set('now', String(d.now || '').replace('T', ' ').slice(0, 19));
+    })
+    .catch(function () {
+        set('db', '取不到', 'bad'); set('access', '取不到', 'bad');
+        set('allow', '取不到', 'bad'); set('now', '取不到', 'bad');
+    });
+
+fetch('/v1/whoami', { headers: { accept: 'application/json' } })
+    .then(function (r) { return r.json().then(function (d) { return { s: r.status, d: d }; }); })
+    .then(function (x) {
+        var el = document.getElementById('who');
+        if (x.s === 200 && x.d.email) el.textContent = x.d.email;
+        else if (x.s === 503) el.textContent = 'Access 尚未配置 —— 写接口已全部关闭';
+        else el.textContent = '身份未通过校验（HTTP ' + x.s + '）';
+    })
+    .catch(function () { document.getElementById('who').textContent = '身份接口不可达'; });
+</script>
+</body>
+</html>

@@ -6,6 +6,12 @@
 	"name": "restless-mountain-3c35",
 	"compatibility_date": "2026-09-08",
 
+	// 不要在 workers.dev 上再挂一份主页。
+	// 这个值默认是 true，而且默认值还取决于本文件有没有写 routes ——
+	// 这种隐式耦合迟早出事，索性显式写死。
+	// 只影响 <名字>.workers.dev 这个主机名，不碰 sakuramu.edu.kg 的自定义域绑定。
+	"workers_dev": false,
+
 	// 纯静态站：只需要指向资源目录，不需要 Worker 脚本（无 main 字段）。
 	// 静态资源请求不计入 Worker 调用次数。
 	"assets": {
