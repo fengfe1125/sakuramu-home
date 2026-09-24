@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // 把 shared/ 下的共用片段注入两个页面的标记之间。
 //
-// 目前管两块：
-//   shared/base.css    两个页面逐字相同的那 132 行样式
+// 目前管三块：
+//   shared/base.css    两个页面共用的设计系统
 //   shared/beacon.js   访客埋点
+//   shared/motion.js   顶栏阅读进度、首屏入场开播、区块分隔线绘制
 //
 // 为什么不是外链文件：站点的原则是「访客拿到的是单个自包含 HTML」——
 // 外链会多一次阻塞渲染的请求，首屏样式必须内联才不闪，
@@ -28,6 +29,7 @@ const CHECK = process.argv.includes('--check')
 const BLOCKS = [
   { name: '共用样式', src: 'shared/base.css',  start: '/* base:start */',   end: '/* base:end */',   targets: [HOME, ABOUT] },
   { name: '访客埋点', src: 'shared/beacon.js', start: '/* beacon:start */', end: '/* beacon:end */', targets: [HOME, ABOUT] },
+  { name: '共用动效', src: 'shared/motion.js', start: '/* motion:start */', end: '/* motion:end */', targets: [HOME, ABOUT] },
 ]
 
 let changed = 0

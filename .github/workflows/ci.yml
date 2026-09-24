@@ -22,6 +22,7 @@ jobs:
           node --check scripts/build-notes.mjs
           node --check scripts/build-shared.mjs
           node --check scripts/refresh-snapshot.mjs
+          node --check scripts/check-placeholders.mjs
           node --check admin/src/index.mjs
           node --check admin/src/access.mjs
           node --check admin/src/monitor.mjs
@@ -36,6 +37,7 @@ jobs:
           node --check tests/test_notify.js
           node --check tests/test_noteapi.js
           node --check tests/test_hits.js
+          node --check tests/test_placeholders.js
 
       - name: 渲染器回归
         run: node tests/test_notes.js
@@ -66,6 +68,11 @@ jobs:
       # 「不收客户端说了不算的字段」，以及「没收到离开事件不等于停留 0 秒」。
       - name: 访客统计回归
         run: node tests/test_hits.js
+
+      # 发版闸拦的是「写给作者看的占位跟着发到线上」。漏拦和误拦都要钉住 ——
+      # 第一版把共用样式里的一行注释当成了占位，连主站都发不出去。
+      - name: 发版闸回归
+        run: node tests/test_placeholders.js
 
       # 后台在公网上，而 Access 只挡自定义域这一条路。
       # workers.dev 和版本预览 URL 是两个不同的主机名，都绕过 Access ——

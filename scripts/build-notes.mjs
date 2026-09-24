@@ -105,15 +105,18 @@ async function fetchRemote() {
   }
 }
 
+// 标签结构必须与 v2/index.html 里 renderNotes() 运行时生成的那份一致。
+// 标题用 h3：外面的区块标题「手记」已经是 h2。
+// 空状态是给访客看的，不写「往哪个目录放文件」这类作者说明。
 const body = notes.length
   ? notes.map(n => '        <article class="note reveal">\n'
       + '            <div class="note-meta">' + esc(cnDate(n.date)) + '</div>\n'
-      + '            <h2 class="note-title">' + esc(n.title) + '</h2>\n'
+      + '            <h3 class="note-title">' + esc(n.title) + '</h3>\n'
       + '            <div class="note-body">\n'
       + n.html.split('\n').map(l => '                ' + l).join('\n') + '\n'
       + '            </div>\n'
       + '        </article>').join('\n')
-  : '        <p class="note-empty">往 v2/notes/ 里放一个 .md 文件，它就会出现在这里。</p>'
+  : '        <p class="note-empty">还没有手记。</p>'
 
 const page = await readFile(TARGET, 'utf8')
 const a = page.indexOf(START), b = page.indexOf(END)

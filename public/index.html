@@ -4,358 +4,567 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>沐枫 Rowan | 个人主页</title>
-<meta name="description" content="沐枫 Rowan（@fengfe1125）的个人主页。Dare to think.">
+<meta name="description" content="沐枫 Rowan（@fengfe1125）的个人主页：写 macOS 小工具和本地开发工具。Dare to think.">
+<meta name="theme-color" content="#FAF9F5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta property="og:type" content="profile">
 <meta property="og:url" content="https://sakuramu.edu.kg/">
 <meta property="og:title" content="沐枫 Rowan | 个人主页">
-<meta property="og:description" content="Dare to think.">
+<meta property="og:description" content="写 macOS 小工具和本地开发工具。Dare to think.">
 <meta property="og:image" content="https://sakuramu.edu.kg/avatar.jpg">
 <meta property="og:locale" content="zh_CN">
 <meta name="twitter:card" content="summary">
 
-<script>document.documentElement.className += ' js';</script>
+<script>
+/* 页面一加载就决定播不播动效：减少动态效果、或页面在后台标签页里打开时不播，
+   一切直接是终态。1.5 秒后无论如何加上 .play —— 万一后面哪段脚本出错，
+   首屏也不会一直藏着。正常情况下由 shared/motion.js 在首帧画完后开播。 */
+(function (d) {
+    d.className += ' js';
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches || document.hidden) return;
+    d.className += ' motion';
+    setTimeout(function () { d.classList.add('play'); }, 1500);
+})(document.documentElement);
+</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=JetBrains+Mono:wght@400&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@400;600&family=Caveat:wght@500..700&family=Long+Cang&display=swap" rel="stylesheet">
 
 <style>
 /* base:start */
-/* 首页与关于页共用的那一段样式。
+/* 首页与关于页共用的设计系统：线条简约，令牌取自 anthropic.com 的实测值。
  *
- * 为什么能安全抽出来：这 132 行在两个文件里是**逐字相同的开头**，
- * 不是散落各处的相同规则。原样放回原位，源码顺序丝毫不变 ——
- * CSS 靠源码顺序层叠，把散落的规则收拢成一块会悄悄改变同优先级规则的胜负。
- *
- * 由 scripts/build-css.mjs 注入两个页面的 base:start / base:end 之间。
+ * 由 scripts/build-shared.mjs 注入两个页面的 base:start / base:end 之间。
  * 访客拿到的仍然是单个自包含 HTML，不多一次请求。
  * 改样式改这里，两边同时生效；CI 会检查注入结果与源文件一致。
+ *
+ * 页面专属的样式写在各自页面里、这段之后。CSS 同优先级时后写的赢，
+ * 所以页面可以放心覆盖这里的默认值。
  */
+
 /* ═════ 1. 令牌 ═════
-   间距刻度取自 innei.in：3.5/7/14/28/35/42/56/70/105/112px（14px 根字号下的
-   0.25rem 倍数）。这里按 16px 根字号等比放大，仍是同一套比例关系。 */
+   ivory 三档做底，slate 做字，clay 做点缀。
+   clay 在浅底上对比度只有 3:1，只给色块、线条和大字用；
+   小字一律用 --ink-3（浅底上 6.2:1，深底上 8.3:1）。 */
 :root {
-    --paper:#F4F2EA; --sheet:#FBFAF5; --ink:#1A1C16;
-    --ink-soft:rgba(26,28,22,.78); --ink-faint:rgba(26,28,22,.52);
-    --rule:rgba(26,28,22,.10); --rule-strong:rgba(26,28,22,.18);
-    --accent:#B24E33; --hover:rgba(178,78,51,.06); --chip:rgba(26,28,22,.045);
-    --empty:rgba(26,28,22,.06);
+    --bg:#FAF9F5; --bg-2:#F0EEE6; --bg-3:#E8E6DC;
+    --ink:#141413; --ink-2:#3D3D3A; --ink-3:#5E5D59;
+    --line:rgba(20,20,19,.10); --line-2:rgba(20,20,19,.20);
+    --clay:#D97757; --clay-text:#C6613F;
 
-    --s1:4px;  --s2:8px;   --s3:16px; --s4:32px;  --s5:40px;
-    --s6:48px; --s7:64px;  --s8:80px; --s9:120px; --s10:128px;
+    --sans:'DM Sans','Noto Sans SC','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+    --serif:'Noto Serif SC','Songti SC','STSong',Georgia,serif;
+    --mono:'JetBrains Mono','Noto Sans SC',ui-monospace,SFMono-Regular,Menlo,monospace;
 
-    /* 389.17ms 弹簧，25% 处过冲 1.048（devouringdetails 生产环境原值） */
-    --spring:linear(0 0%, 0.013389 1%, 0.049373 2%, 0.102262 3%, 0.167133 4%, 0.239788 5%, 0.316716 6%, 0.395034 7%, 0.472432 8%, 0.547109 9%, 0.617715 10%, 0.68329 11%, 0.743204 12%, 0.797107 13%, 0.844877 14%, 0.886576 15%, 0.922409 16%, 0.952689 17%, 0.977806 18%, 0.998202 19%, 1.014346 20%, 1.026718 21%, 1.035795 22%, 1.042036 23%, 1.045879 24%, 1.04773 25%, 1.047962 26%, 1.046909 27%, 1.04487 28%, 1.042104 29%, 1.038837 30%, 1.035258 31%, 1.031524 32%, 1.027766 33%, 1.024084 34%, 1.020558 35%, 1.017245 36%, 1.014186 37%, 1.011406 38%, 1.008919 39%, 1.006726 40%, 1.004821 41%, 1.003194 42%, 1.001828 43%, 1.000702 44%, 0.999796 45%, 0.999085 46%, 0.998548 47%, 0.998162 48%, 0.997904 49%, 0.997755 50%, 0.997695 51%, 0.997707 52%, 0.997776 53%, 0.997887 54%, 0.998029 55%, 0.998192 56%, 0.998368 57%, 0.998548 58%, 0.998728 59%, 0.998903 60%, 0.999069 61%, 0.999224 62%, 0.999366 63%, 0.999495 64%, 0.99961 65%, 0.99971 66%, 0.999797 67%, 0.999871 68%, 0.999932 69%);
-    --ease-ui:cubic-bezier(.4,0,.2,1);
+    --wrap:1200px; --gutter:clamp(16px,4vw,40px); --head:64px;
+    --r-card:12px; --r-tile:16px;
+    --ease:cubic-bezier(.2,.7,.2,1); --ease-ui:cubic-bezier(.4,0,.2,1);
 }
 @media (prefers-color-scheme:dark) {
     :root {
-        --paper:#131410; --sheet:#1A1C15; --ink:#EDEAE0;
-        --ink-soft:rgba(237,234,224,.80); --ink-faint:rgba(237,234,224,.50);
-        --rule:rgba(237,234,224,.11); --rule-strong:rgba(237,234,224,.18);
-        --accent:#E08A6C; --hover:rgba(224,138,108,.08); --chip:rgba(237,234,224,.06);
-        --empty:rgba(237,234,224,.07);
+        --bg:#141413; --bg-2:#1F1E1C; --bg-3:#2B2A27;
+        --ink:#FAF9F5; --ink-2:#D1CFC5; --ink-3:#B0AEA5;
+        --line:rgba(250,249,245,.10); --line-2:rgba(250,249,245,.20);
+        --clay-text:#D97757;
     }
 }
 
-* { margin:0; padding:0; box-sizing:border-box; }
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+[hidden] { display:none !important; }
 
+html { -webkit-text-size-adjust:100%; text-size-adjust:100%;
+    scroll-behavior:smooth; scroll-padding-top:calc(var(--head) + 24px); }
 body {
-    background:var(--paper); color:var(--ink);
-    font-family:'DM Sans','Noto Serif SC',-apple-system,serif;
-    font-size:16px; line-height:1.9;
-    -webkit-font-smoothing:antialiased;
+    background:var(--bg); color:var(--ink);
+    font-family:var(--serif); font-size:17px; line-height:1.8;
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
 }
+@media (min-width:900px) { body { font-size:18px; } }
 
-/* ═════ 2. 骨架：居中单栏，靠留白分段而不是靠线 ═════ */
-.page { max-width:1120px; margin:0 auto; padding:var(--s7) var(--s5) var(--s10); }
-.col  { max-width:760px; }
-section { margin-top:var(--s9); }
+img,svg,canvas { display:block; max-width:100%; }
+a { color:inherit; }
+/* 中文按字断行，标题最容易在末尾剩下孤零零的一两个字。
+   标题用 balance 把几行排匀，正文用 pretty 只避免孤字；不支持的浏览器照常断行。 */
+h1,h2,h3 { text-wrap:balance; }
+p,li,dd { text-wrap:pretty; }
+ul,ol { list-style:none; }
+::selection { background:color-mix(in srgb,var(--clay) 28%,transparent); }
+:focus-visible { outline:2px solid var(--ink); outline-offset:3px; border-radius:4px; }
 
-/* 版块标签：小号等宽大写，和衬线正文拉开层级 */
-.label {
-    font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:400;
-    letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint);
-    display:flex; align-items:baseline; gap:var(--s3); margin-bottom:var(--s5);
+.wrap { max-width:var(--wrap); margin:0 auto; padding:0 var(--gutter); }
+
+/* 行内文字链接：细下划线，悬停变 clay */
+.u { text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:.25em;
+    text-decoration-color:var(--line-2); transition:text-decoration-color .2s var(--ease-ui); }
+.u:hover { text-decoration-color:var(--clay); }
+
+/* ═════ 2. 顶栏：吸顶，离开页首后才出现底线 ═════ */
+.top { position:sticky; top:0; z-index:20; background:var(--bg);
+    border-bottom:1px solid transparent; transition:border-color .25s var(--ease-ui); }
+.top.stuck { border-bottom-color:var(--line); }
+/* 阅读进度：顶栏底边一条陶土色细线，跟着滚动从左往右走（--progress 由 shared/motion.js 写） */
+.top::after { content:''; position:absolute; left:0; right:0; bottom:-1px; height:1px;
+    background:var(--clay); transform-origin:left center; transform:scaleX(var(--progress,0)); }
+.top .wrap { height:var(--head); display:flex; align-items:center; justify-content:space-between; gap:24px; }
+.brand { display:inline-flex; align-items:center; gap:10px; text-decoration:none;
+    font-family:var(--sans); font-weight:700; font-size:17px; letter-spacing:-.01em; }
+.mark { width:30px; height:30px; flex:none; }
+.nav { display:flex; align-items:center; gap:clamp(16px,3vw,36px);
+    font-family:var(--sans); font-size:15px; }
+.nav a { position:relative; padding:6px 0; white-space:nowrap; text-decoration:none;
+    color:var(--ink-3); transition:color .2s var(--ease-ui); }
+.nav a::after { content:''; position:absolute; left:0; right:0; bottom:2px; height:1px;
+    background:currentColor; transform:scaleX(0); transform-origin:left;
+    transition:transform .3s var(--ease); }
+.nav a:hover,.nav a[aria-current="page"] { color:var(--ink); }
+.nav a:hover::after,.nav a[aria-current="page"]::after { transform:scaleX(1); }
+
+/* ═════ 3. 首屏：左边粗体大字，右栏小字与按钮，底边对齐 ═════ */
+.hero { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:24px; row-gap:32px;
+    align-items:end; padding:clamp(56px,10vw,136px) 0 clamp(40px,6vw,72px); }
+.hero h1 { grid-column:1 / span 8; font-family:var(--sans); font-weight:700;
+    font-size:clamp(34px,5.2vw,64px); line-height:1.18; letter-spacing:-.015em; }
+.hero-aside { grid-column:9 / -1; }
+.who { font-family:var(--mono); font-size:13px; letter-spacing:.03em; color:var(--ink-3); }
+.lede { font-size:19px; line-height:1.7; margin-top:10px; }
+.actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:28px; }
+
+/* ═════ 4. 区块：顶部一根发丝线，左列编号与标题，右列内容 ═════ */
+.sec { position:relative; display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:24px; row-gap:28px;
+    padding:clamp(56px,8vw,112px) 0; }
+/* 顶线用伪元素画而不是 border，才能让它从左往右画出来（见第 8 节） */
+.sec::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:var(--line);
+    transform-origin:left center; transition:transform 1.2s var(--ease); }
+.sec-head { grid-column:1 / span 3; align-self:start;
+    position:sticky; top:calc(var(--head) + 32px); }
+.sec-body { grid-column:4 / -1; min-width:0; }
+.sec-no { font-family:var(--mono); font-size:12px; letter-spacing:.06em; color:var(--ink-3); }
+.sec-title { font-family:var(--sans); font-weight:700; font-size:clamp(24px,2.4vw,30px);
+    line-height:1.25; letter-spacing:-.01em; margin-top:10px; }
+.sec-desc { font-size:15px; line-height:1.75; color:var(--ink-3); margin-top:12px; max-width:17em; }
+
+/* 行线列表：一行一件事，左边名字，右边说明 */
+.rows > li { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,2fr); gap:6px 24px;
+    padding:20px 0; border-top:1px solid var(--line); }
+.rows > li:last-child { border-bottom:1px solid var(--line); }
+.rows .k { font-family:var(--sans); font-weight:700; font-size:17px; line-height:1.6; }
+.rows .v { color:var(--ink-2); }
+
+/* 键值行：左边等宽小字，右边值，行间发丝线 */
+.kv > div { display:flex; align-items:baseline; justify-content:space-between; gap:16px;
+    padding:10px 0; border-top:1px solid var(--line); }
+.kv dt { flex:none; font-family:var(--mono); font-size:12px; letter-spacing:.04em; color:var(--ink-3); }
+.kv dd { min-width:0; text-align:right; font-family:var(--sans); font-size:14px; line-height:1.6; }
+.sq { display:inline-block; width:8px; height:8px; margin-right:7px; border-radius:2px; vertical-align:1px; }
+
+/* 描边卡片：整张可点，悬停换底色并轻轻浮起 3px。
+   浮起用独立的 translate 属性，不和揭示动画的 transform 打架。 */
+.cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.card { display:flex; flex-direction:column; padding:24px 24px 8px; text-decoration:none; color:inherit;
+    border:1px solid var(--line-2); border-radius:var(--r-card);
+    transition:background-color .2s var(--ease-ui),translate .3s var(--ease); }
+.card:hover { background:var(--bg-2); translate:0 -3px; }
+.card-top { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+.card-name { font-family:var(--sans); font-weight:700; font-size:21px; line-height:1.3;
+    letter-spacing:-.01em; overflow-wrap:anywhere; }
+/* 星标放在标题行而不是键值行：有的仓库有、有的没有，
+   放进键值行会让并排两张卡的行线对不齐。 */
+.card-meta { flex:none; display:flex; align-items:baseline; gap:12px; }
+.card-star { font-family:var(--mono); font-size:12px; color:var(--ink-3); }
+.card-go { font-family:var(--sans); color:var(--ink-3);
+    transition:transform .25s var(--ease),color .2s var(--ease-ui); }
+.card:hover .card-go { color:var(--ink); transform:translate(3px,-3px); }
+.card-desc { flex:1; margin-top:12px; font-size:16px; line-height:1.8; color:var(--ink-2); }
+.card .kv { margin-top:24px; }
+
+/* 按钮与胶囊 */
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:44px; padding:0 22px;
+    border:1px solid var(--ink); border-radius:999px; white-space:nowrap; text-decoration:none; cursor:pointer;
+    font-family:var(--sans); font-size:15px; font-weight:500;
+    transition:background-color .2s var(--ease-ui),color .2s var(--ease-ui),border-color .2s var(--ease-ui); }
+.btn-solid { background:var(--ink); color:var(--bg); }
+.btn-solid:hover { background:var(--ink-2); border-color:var(--ink-2); }
+.btn-line { background:transparent; color:var(--ink); }
+.btn-line:hover { background:var(--ink); color:var(--bg); }
+.pill { display:inline-flex; align-items:center; gap:8px; padding:5px 14px;
+    border:1px solid var(--line-2); border-radius:999px;
+    font-family:var(--sans); font-size:14px; line-height:1.5; color:var(--ink-2); }
+.pill > :empty { display:none; }
+
+/* ═════ 5. 页脚：多列链接，最底一行版权 ═════ */
+.foot { border-top:1px solid var(--line); }
+.foot-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:24px; row-gap:40px;
+    padding:56px 0 48px; }
+.foot-brand { grid-column:1 / span 5; }
+.foot-brand .mark { width:44px; height:44px; }
+/* 手写签名：中文龙藏体，英文 Caveat（字体见第 10 节） */
+.foot-sign { display:inline-block; margin-top:14px; font-size:46px; line-height:1.1; }
+.foot-sign .hand-en { margin-left:6px; font-size:30px; color:var(--ink-3); }
+.foot-motto { font-size:15px; color:var(--ink-3); }
+.foot-col { grid-column:span 2; }
+.foot-col:last-child { grid-column:span 3; }
+.foot-col h2 { font-family:var(--sans); font-weight:500; font-size:13px; color:var(--ink-3); }
+.foot-col ul { margin-top:12px; }
+.foot-col a { display:inline-block; padding:4px 0; font-family:var(--sans); font-size:15px;
+    color:var(--ink-2); text-decoration:none; overflow-wrap:anywhere;
+    transition:color .2s var(--ease-ui); }
+.foot-col a:hover { color:var(--ink); text-decoration:underline; text-decoration-thickness:1px;
+    text-underline-offset:.25em; }
+.foot-base { display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    padding:20px 0 32px; border-top:1px solid var(--line);
+    font-family:var(--mono); font-size:12px; letter-spacing:.04em; color:var(--ink-3); }
+.foot-base a { text-decoration:none; transition:color .2s var(--ease-ui); }
+.foot-base a:hover { color:var(--ink); }
+
+/* ═════ 6. 占位：只该在本地预览里出现 ═════
+   发版脚本见到 data-todo 就拒绝部署（scripts/check-placeholders.mjs）。 */
+[data-todo] { outline:1px dashed var(--clay); outline-offset:8px; border-radius:2px; }
+
+/* ═════ 7. 揭示：淡入加 8px 位移 ═════
+   默认可见，只有 JS 确定要播时才先藏起来（见页面里的 revealNow）。
+   transition 列表带上 background-color 和 translate，否则卡片的悬停过渡会被这条盖掉。 */
+.js .reveal { opacity:0; transform:translateY(8px);
+    transition:opacity .6s var(--ease),transform .6s var(--ease),
+               background-color .2s var(--ease-ui),translate .3s var(--ease); }
+.js .reveal.in { opacity:1; transform:none; }
+
+/* ═════ 8. 首屏入场与线条绘制 ═════
+   .motion 由 <head> 里的小脚本按需加上（减少动态效果、后台标签页时不加），
+   .play 由 shared/motion.js 在首帧画完后加上。没有 .motion 时一切都是终态。 */
+.motion .hero > * { opacity:0; transform:translateY(16px); }
+.motion.play .hero > * { opacity:1; transform:none;
+    transition:opacity .9s var(--ease),transform .9s var(--ease); }
+.motion.play .hero > :nth-child(2) { transition-delay:.12s; }
+
+/* 区块顶线：滚到时从左往右画出来（shared/motion.js 加 .drawn） */
+.motion .sec:not(.drawn)::before { transform:scaleX(0); }
+
+/* 手写的字：跟着区块顶线一起，从左往右「写」出来。
+   用 inset() 的裁切做：没写出来时右边裁掉 100%，写完时四边都往外放，
+   手写体的笔画常常伸出字框，终态不能裁到它。两头都得是 inset() 才能过渡。 */
+.motion .scribble,.motion .foot-sign { clip-path:inset(-50% -10% -50% -4%);
+    transition:clip-path 1.1s var(--ease) .45s; }
+.motion .sec:not(.drawn) .scribble,
+.motion .foot:not(.drawn) .foot-sign { clip-path:inset(-50% 100% -50% -4%); }
+
+/* 站标开场一笔画出：头、鱼、五官依次，眼睛最后点上。
+   路径都写了 pathLength="1"，虚线按 1 算，不用量每条路径多长。
+   dasharray 用「1 2」而不是「1」：起点处不会先冒出一个圆头小点。 */
+@keyframes stroke-in { from { stroke-dashoffset:1.01; } }
+@keyframes pop-in { from { transform:scale(0); } }
+.motion .top .mark path { stroke-dasharray:1 2; animation:stroke-in 1s var(--ease) backwards; }
+.motion .top .mark .fish path { animation-delay:.3s; }
+.motion .top .mark .face { animation-delay:.55s; }
+.motion .top .mark circle { transform-box:fill-box; transform-origin:center;
+    animation:pop-in .35s var(--ease) .9s backwards; }
+.motion .top .mark .eye { animation:pop-in .35s var(--ease) .9s backwards, blink 6.5s ease-in-out 2.5s infinite; }
+
+/* ═════ 9. 站标的小动作 ═════
+   每隔几秒眨一次眼；指向站标时头顶的鱼会晃。
+   眨眼用独立的 scale、晃鱼用独立的 rotate，不和开场的 transform / 描线动画打架。
+   这一节要写在第 8 节后面：晃鱼的 animation 简写要盖掉开场给鱼设的延迟。 */
+@keyframes blink { 0%,94%,100% { scale:1 1; } 96% { scale:1 .1; } }
+@keyframes swim { 0%,100% { rotate:0deg; } 25% { rotate:-9deg; } 75% { rotate:7deg; } }
+.mark .eye { transform-box:fill-box; transform-origin:center; animation:blink 6.5s ease-in-out 2.5s infinite; }
+.foot .mark .eye { animation-duration:8.5s; animation-delay:4s; }
+.mark .fish { transform-box:fill-box; transform-origin:40% 60%; }
+.brand:hover .mark .fish { animation:swim .9s ease-in-out infinite; }
+
+/* ═════ 10. 手写体：只做点缀 ═════
+   中文龙藏体（像钢笔随手写的批注），英文 Caveat。正文和标题不用手写，
+   只用在口号、批注、签名这类「顺手写上去」的地方。都走 Google Fonts，
+   中文字体按字切片，页面只下载用到的那几个字所在的分片。 */
+.hand-zh { font-family:'Long Cang','Caveat',cursive; font-weight:400; }
+.hand-en { font-family:'Caveat',cursive; font-weight:600; }
+/* 区块标题旁的小批注：陶土色，像红笔在稿子边上写的一句话。
+   24px 算大字，陶土色在浅底上 3.8:1 够用。 */
+.scribble { display:inline-block; margin-top:10px; font-size:24px; line-height:1.2;
+    color:var(--clay-text); transform:rotate(-3deg); transform-origin:left center; }
+
+@media (max-width:900px) {
+    .hero,.sec { grid-template-columns:minmax(0,1fr); }
+    .hero h1,.hero-aside,.sec-head,.sec-body { grid-column:1 / -1; }
+    .sec-head { position:static; }
+    .sec-desc { max-width:32em; }
+    .foot-grid { grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:16px; }
+    .foot-brand,.foot-col:last-child { grid-column:1 / -1; }
+    .foot-col { grid-column:auto; }
 }
-.label::after { content:''; flex:1; height:1px; background:var(--rule); }
-.label .zh { font-family:'Noto Serif SC',serif; font-size:.8rem;
-    letter-spacing:0; text-transform:none; }
+@media (max-width:640px) {
+    .cards { grid-template-columns:minmax(0,1fr); }
+    .rows > li { grid-template-columns:minmax(0,1fr); }
+}
+@media (prefers-reduced-motion:reduce) {
+    html { scroll-behavior:auto; }
+    *,*::before,*::after { animation:none !important; transition:none !important; }
+    .js .reveal { opacity:1 !important; transform:none !important; }
+}
+/* base:end */
 
-/* ═════ 3. 顶栏 ═════ */
-.top { display:flex; align-items:baseline; justify-content:space-between;
-    gap:var(--s4); flex-wrap:wrap;
-    font-family:'JetBrains Mono',monospace; font-size:11.5px;
-    letter-spacing:.04em; color:var(--ink-faint); }
-.top a { color:inherit; text-decoration:none; border-bottom:1px solid transparent;
-    transition:color .2s var(--ease-ui),border-color .2s var(--ease-ui); }
-.top a:hover { color:var(--accent); border-bottom-color:var(--accent); }
-.top nav { display:flex; gap:var(--s4); }
-.caret { display:inline-block; width:6px; height:1em; margin-left:4px;
-    background:var(--accent); vertical-align:-2px; animation:blink 1.2s steps(2) infinite; }
-@keyframes blink { 50% { opacity:0 } }
+/* ═════ 首页专属 ═════ */
+/* 首屏的名字：大号粗体，逐字浮起（入场的 .motion / .play 见共用样式第 8 节） */
+.hero .name { font-size:clamp(76px,13vw,184px); line-height:.92; letter-spacing:-.045em; }
+.name span { display:inline-block; }
+.motion .hero > .name { opacity:1; transform:none; }
+.motion .name span { opacity:0; transform:translateY(.3em); }
+.motion.play .name span { opacity:1; transform:none;
+    transition:opacity .8s var(--ease) calc(var(--i) * 70ms),transform 1s var(--ease) calc(var(--i) * 70ms); }
 
-/* ═════ 4. 主视觉：靠上方 120px 留白给份量，不靠字号堆 ═════ */
-.hero { margin-top:var(--s9); display:flex; gap:var(--s6); align-items:flex-start; flex-wrap:wrap; }
-.hero img { width:104px; height:104px; object-fit:cover; flex-shrink:0; }
-.hero .who { flex:1; min-width:260px; }
-h1 { font-family:'Noto Serif SC',serif; font-weight:400;
-    font-size:clamp(2.8rem,6.4vw,4.4rem); line-height:1.12; letter-spacing:-.02em; }
-.handle { font-family:'JetBrains Mono',monospace; font-size:.78rem;
-    color:var(--ink-faint); margin-top:var(--s3); letter-spacing:.04em; }
-.lede { font-size:1.12rem; color:var(--ink-soft); margin-top:var(--s5); max-width:34em; }
-.status { display:none; align-items:center; gap:8px; margin-top:var(--s4);
-    font-size:.88rem; color:var(--ink-soft); }
-.status.on { display:inline-flex; }
-#fx { width:100%; height:132px; display:block; margin-top:var(--s6); opacity:.85; }
+/* 口号：手写，底下一道手绘的陶土色弧线，入场后自己画出来 */
+.motto { position:relative; display:inline-block; margin-top:8px; font-size:36px; line-height:1.15;
+    transform:rotate(-3deg); transform-origin:left bottom; }
+.swoosh { position:absolute; left:-4px; bottom:-10px; width:calc(100% + 12px); height:auto; overflow:visible;
+    fill:none; stroke:var(--clay); stroke-width:3; stroke-linecap:round; }
+.motion .swoosh path { stroke-dasharray:1 2; animation:stroke-in .9s var(--ease) 1.1s backwards; }
+.status { margin-top:20px; }
 
-/* ═════ 5. 作品：极简列表，发丝线分隔 ═════ */
-.work { display:block; padding:var(--s5) 0; border-top:1px solid var(--rule);
-    text-decoration:none; color:inherit;
-    transition:background-color .2s var(--ease-ui),scale .389s var(--spring); }
-.work:hover { background:var(--hover); }
-.work:active { scale:.995; }
-.wtop { display:flex; align-items:baseline; gap:var(--s3); flex-wrap:wrap; }
-.wname { font-family:'Noto Serif SC',serif; font-size:1.24rem; font-weight:400; }
-.wmeta { margin-left:auto; display:flex; align-items:center; gap:var(--s3);
-    font-family:'JetBrains Mono',monospace; font-size:.64rem; color:var(--ink-faint); }
-.sq { width:7px; height:7px; flex-shrink:0; display:inline-block; margin-right:5px; }
-.wdesc { font-size:.95rem; line-height:1.95; color:var(--ink-soft);
-    margin-top:var(--s2); max-width:56em; }
-.tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:var(--s3); }
-.tags b { font-family:'JetBrains Mono',monospace; font-weight:400; font-size:.6rem;
-    padding:3px 8px; background:var(--chip); color:var(--ink-faint); }
-.go { color:var(--ink-faint); transition:transform .2s var(--ease-ui),color .2s var(--ease-ui); }
-.work:hover .go { color:var(--accent); transform:translate(3px,-3px); }
+/* 插画块：陶土底上的墨色细线。深浅模式下是同一块陶土，线也固定用墨色，
+   所以这里写死颜色而不是用令牌 —— 画布脚本读的就是这里的 color。 */
+.stage { position:relative; height:clamp(220px,32vw,420px); overflow:hidden;
+    margin-bottom:clamp(56px,8vw,96px);
+    border-radius:var(--r-tile); background:#D97757; color:#141413; }
+.stage canvas { position:absolute; inset:0; width:100%; height:100%; }
+.cap { position:absolute; left:20px; right:20px; display:flex; justify-content:space-between; gap:16px;
+    font-family:var(--mono); font-size:12px; line-height:1.4; letter-spacing:.04em; pointer-events:none; }
+.cap-t { top:16px; }
+.cap-b { bottom:16px; }
+/* 入场：跟在首屏两块后面浮现（.motion / .play 的说明见共用样式第 8 节） */
+.motion .stage { opacity:0; transform:translateY(16px); }
+.motion.play .stage { opacity:1; transform:none;
+    transition:opacity 1s var(--ease) .24s,transform 1s var(--ease) .24s; }
+/* 鼠标能拨动立方体（见下面的画布脚本），光标换成十字准星提示一下 */
+@media (hover:hover) and (pointer:fine) { .stage { cursor:crosshair; } }
 
-/* ═════ 6. 外链：一行文字链，不做卡片 ═════ */
-.links { display:flex; flex-wrap:wrap; gap:var(--s3) var(--s6); }
-.links a { display:inline-flex; align-items:center; gap:10px; text-decoration:none;
-    color:inherit; padding:var(--s2) 0;
-    transition:color .2s var(--ease-ui),scale .389s var(--spring); }
-.links a:hover { color:var(--accent); }
-.links a:active { scale:.97; }
-.links svg { width:17px; height:17px; fill:currentColor; opacity:.7; }
-.links .t { font-size:.95rem; }
-.links .h { font-family:'JetBrains Mono',monospace; font-size:.64rem; color:var(--ink-faint); }
+/* 手写批注：箭头指向立方体。有鼠标的设备提示可以拨，触屏上换一句 */
+.note { position:absolute; top:22%; left:calc(50% + clamp(56px,11vw,168px)); pointer-events:none;
+    font-size:clamp(20px,2vw,28px); line-height:1.1; white-space:nowrap; transform:rotate(-4deg); }
+.note-text { display:inline-block; }
+.note-arrow { position:absolute; left:-64px; top:.75em; width:60px; height:44px; overflow:visible;
+    fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+.for-touch { display:none; }
+@media (hover:none),(pointer:coarse) { .for-mouse { display:none; } .for-touch { display:inline; } }
+/* 入场：插画块浮上来之后，字从左往右写出来，再画箭头 */
+@keyframes write-on { from { clip-path:inset(-50% 100% -50% -4%); } to { clip-path:inset(-50% -10% -50% -4%); } }
+.motion .note-text { animation:write-on 1.1s var(--ease) 1.3s backwards; }
+.motion .note-arrow path { stroke-dasharray:1 2; animation:stroke-in .7s var(--ease) 2.2s backwards; }
+.motion .note-arrow path + path { animation-delay:2.7s; }
 
-/* ═════ 7. Token 统计 ═════ */
-.tkstats { display:grid; grid-template-columns:repeat(3,1fr);
-    gap:var(--s7) var(--s5); margin-bottom:var(--s8); }
-.stat b { display:block; font-family:'Noto Serif SC',serif; font-weight:400;
-    font-size:clamp(1.7rem,3.4vw,2.4rem); line-height:1.1;
-    letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
-.stat span { display:block; margin-top:10px; font-family:'JetBrains Mono',monospace;
-    font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); }
+/* ═════ 用量 ═════ */
+/* 六个数字：格子之间一根发丝线，外圈只留上下两根。
+   做法是网格底色当线、格子盖上页面底色，1px 的间隙就成了内线。 */
+.stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1px;
+    background:var(--line); background-clip:padding-box;
+    border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.stat { background:var(--bg); padding:24px 20px 22px; }
+.stat:nth-child(3n+1) { padding-left:0; }
+.stat b { display:block; font-family:var(--sans); font-weight:500; font-size:clamp(28px,3.2vw,40px);
+    line-height:1.1; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.stat span { display:block; margin-top:10px; font-family:var(--sans); font-size:13px; color:var(--ink-3); }
+.tk-asof { margin-top:12px; font-family:var(--mono); font-size:12px; letter-spacing:.03em; color:var(--ink-3); }
 
-.tkhead { display:flex; align-items:baseline; gap:var(--s3); margin-bottom:var(--s4); }
-.vh { font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.14em;
-    text-transform:uppercase; color:var(--ink-faint); }
-.tkviews { margin-left:auto; display:flex; gap:var(--s1); }
-.tkviews button { font-family:'JetBrains Mono',monospace; font-size:.62rem;
-    padding:4px 9px; background:none; color:var(--ink-faint); letter-spacing:.04em;
-    border:0; border-bottom:1px solid transparent; cursor:pointer;
-    transition:color .2s var(--ease-ui),border-color .2s var(--ease-ui); }
-.tkviews button:hover { color:var(--ink-soft); }
-.tkviews button[aria-selected="true"] { color:var(--accent); border-bottom-color:var(--accent); }
+.block { margin-top:clamp(48px,6vw,72px); }
+.block-head { display:flex; align-items:center; justify-content:space-between; gap:12px 16px;
+    flex-wrap:wrap; margin-bottom:20px; }
+.block-title { font-family:var(--sans); font-weight:700; font-size:18px; letter-spacing:-.01em; }
 
-/* 行高、列宽、间隙由 JS 按可用宽度算（见 drawMap）；
+/* 视图切换：胶囊分段 */
+.seg { display:inline-flex; gap:2px; padding:3px; border:1px solid var(--line-2); border-radius:999px; }
+.seg button { height:30px; padding:0 14px; border:0; border-radius:999px; background:none; cursor:pointer;
+    font-family:var(--sans); font-size:13px; color:var(--ink-3);
+    transition:background-color .2s var(--ease-ui),color .2s var(--ease-ui); }
+.seg button:hover { color:var(--ink); }
+.seg button[aria-selected="true"] { background:var(--ink); color:var(--bg); }
+
+/* 热力图：行高、列宽、间隙由 JS 按可用宽度算（见 drawMap）；
    塞不下时 .tkscroll 自己横向滚动，整页绝不出现横向滚动条。 */
 .tkscroll { overflow-x:auto; overflow-y:hidden; }
 .tkgrid { display:grid; grid-auto-flow:column; gap:3px; }
-/* base:end */
-.tkgrid i { background:var(--empty); transition:background-color .5s var(--ease-ui),
-            outline-color .15s var(--ease-ui); outline:1px solid transparent; outline-offset:1px; }
-.tkgrid i:not(.pad):hover { outline-color:var(--accent); }
+.tkgrid i { border-radius:2px; background:var(--bg-3); outline:1px solid transparent; outline-offset:1px;
+    transition:background-color .4s var(--ease-ui),outline-color .15s var(--ease-ui); }
+.tkgrid i:not(.pad):hover { outline-color:var(--ink); }
+.tkgrid i.pad { visibility:hidden; }
+.tkgrid i.l1,.tkscale i.l1 { background:color-mix(in srgb,var(--clay) 35%,var(--bg-3)); }
+.tkgrid i.l2,.tkscale i.l2 { background:color-mix(in srgb,var(--clay) 68%,var(--bg-3)); }
+.tkgrid i.l3,.tkscale i.l3 { background:var(--clay); }
+/* 入场：按列交错。只在这一块真正露出来时才加 .anim（见 revealNow）——
+   动画不能是内容可见的前提，后台标签页里动画会被挂起。 */
+@keyframes cellIn { from { opacity:0; transform:scale(.5); } }
+.tkgrid.anim i { animation:cellIn .45s var(--ease-ui) both; animation-delay:calc(var(--c) * 10ms); }
+.tkmonths { display:grid; gap:3px; margin-top:10px; overflow:hidden;
+    font-family:var(--mono); font-size:11px; color:var(--ink-3); }
+.tkmonths span { white-space:nowrap; }
+.tkfoot { display:flex; align-items:center; flex-wrap:wrap; gap:8px 16px; margin-top:14px;
+    font-family:var(--mono); font-size:12px; color:var(--ink-3); }
+.tkscale { display:flex; align-items:center; gap:3px; margin-left:auto; }
+.tkscale i { width:10px; height:10px; border-radius:2px; background:var(--bg-3); }
+.tkcap { margin-top:14px; max-width:40em; font-size:14px; line-height:1.75; color:var(--ink-3); }
 
-/* 入场：按列交错。默认可见，只有确定要播时才加 .anim ——
-   动画不能是内容可见的前提（后台标签页里动画会被挂起）。 */
-@keyframes cellIn { from { opacity:0; transform:scale(.55) } }
-.tkgrid.anim i { animation:cellIn .45s var(--ease-ui) both;
-    animation-delay:calc(var(--c) * 11ms); }
+/* 按工具分：一行一个工具，细线当轨道，陶土色当读数 */
+.agents { border-top:1px solid var(--line); }
+.agent { display:grid; grid-template-columns:minmax(88px,10em) minmax(0,1fr) 5.5em; align-items:center;
+    gap:16px; padding:13px 0; border-bottom:1px solid var(--line); }
+.agent .n { font-family:var(--sans); font-size:15px; }
+.agent .bar { position:relative; height:1px; background:var(--line-2); }
+.agent .bar i { position:absolute; left:0; top:-1px; height:3px; width:0; border-radius:2px;
+    background:var(--clay); transition:width .9s var(--ease); }
+.agent .v { text-align:right; font-family:var(--mono); font-size:13px; color:var(--ink-2);
+    font-variant-numeric:tabular-nums; }
+.tknotes { margin-top:24px; }
+.tknotes li { position:relative; padding-left:18px; font-size:14px; line-height:1.75; color:var(--ink-3); }
+.tknotes li + li { margin-top:6px; }
+.tknotes li::before { content:''; position:absolute; left:0; top:.9em; width:8px; height:1px; background:currentColor; }
 
 /* 悬浮提示：跟随光标，取代浏览器原生 title（原生的延迟久、样式不可控） */
-.tip { position:fixed; z-index:30; pointer-events:none; opacity:0;
-    background:var(--sheet); color:var(--ink); border:1px solid var(--rule-strong);
-    padding:9px 12px; font-family:'JetBrains Mono',monospace; font-size:.66rem;
-    line-height:1.8; white-space:nowrap;
-    box-shadow:0 8px 24px rgba(0,0,0,.10);
-    transition:opacity .15s var(--ease-ui); }
+.tip { position:fixed; z-index:30; pointer-events:none; opacity:0; white-space:nowrap;
+    padding:8px 12px; border:1px solid var(--line-2); border-radius:8px; background:var(--bg); color:var(--ink);
+    font-family:var(--mono); font-size:12px; line-height:1.7; transition:opacity .15s var(--ease-ui); }
 .tip.on { opacity:1; }
-.tip b { display:block; font-weight:500; font-size:.78rem; color:var(--accent);
-    font-variant-numeric:tabular-nums; }
-.tkgrid i.l1 { background:color-mix(in srgb,var(--accent) 32%,transparent); }
-.tkgrid i.l2 { background:color-mix(in srgb,var(--accent) 64%,transparent); }
-.tkgrid i.l3 { background:var(--accent); }
-.tkgrid i.pad { visibility:hidden; }
-.tkmonths { display:grid; gap:3px; margin-top:9px; overflow:hidden;
-    font-family:'JetBrains Mono',monospace; font-size:.58rem; color:var(--ink-faint); }
-.tkmonths span { white-space:nowrap; }
-.tkfoot { display:flex; align-items:center; gap:var(--s2); margin-top:var(--s3);
-    font-family:'JetBrains Mono',monospace; font-size:.62rem; color:var(--ink-faint); }
-.tkscale { display:flex; align-items:center; gap:3px; margin-left:auto; }
-.tkscale i { width:9px; height:9px; background:var(--empty); }
-.tkscale i.l1 { background:color-mix(in srgb,var(--accent) 32%,transparent); }
-.tkscale i.l2 { background:color-mix(in srgb,var(--accent) 64%,transparent); }
-.tkscale i.l3 { background:var(--accent); }
-.tkcap { margin-top:var(--s3); font-family:'JetBrains Mono',monospace;
-    font-size:.6rem; line-height:1.9; color:var(--ink-faint); max-width:52em; }
+.tip b { display:block; font-family:var(--sans); font-weight:500; font-size:14px; font-variant-numeric:tabular-nums; }
 
-/* 单列：7 项排 2 列必然剩一个孤儿，怎么排都不对称 */
-.tkagents { display:grid; grid-template-columns:1fr; gap:var(--s4); margin-top:var(--s8); }
-.tkagent { display:grid; grid-template-columns:1fr auto; gap:6px var(--s2); align-items:baseline; }
-.tkagent .n { font-family:'JetBrains Mono',monospace; font-size:.7rem; color:var(--ink-soft); }
-.tkagent .v { font-family:'JetBrains Mono',monospace; font-size:.64rem; color:var(--ink-faint);
-    font-variant-numeric:tabular-nums; }
-.wbar { grid-column:1 / -1; height:2px; background:var(--rule); position:relative; }
-.wbar i { position:absolute; inset:0 auto 0 0; width:0;
-    background:color-mix(in srgb,var(--accent) 55%,transparent);
-    transition:width .9s cubic-bezier(.2,.7,.3,1); }
-
-/* ═════ 9. 页脚 ═════ */
-.foot { margin-top:var(--s10); padding-top:var(--s6); border-top:1px solid var(--rule);
-    display:flex; align-items:baseline; justify-content:space-between; gap:var(--s4);
-    flex-wrap:wrap; }
-.foot .fl { display:flex; align-items:baseline; gap:var(--s3); flex-wrap:wrap; }
-.foot .k { font-family:'JetBrains Mono',monospace; font-size:.62rem;
-    letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint); }
-.foot a { font-family:'JetBrains Mono',monospace; font-size:.86rem;
-    color:var(--accent); text-decoration:none;
-    border-bottom:1px solid transparent; transition:border-color .2s var(--ease-ui); }
-.foot a:hover { border-bottom-color:var(--accent); }
-
-/* ═════ 10. 揭示动画 ═════
-   只做 blur + 透明度，不做位移（位移会让整页滚动时抖一下）。
-   参数同 devouringdetails：blur(6px)→0，.75s ease。 */
-.js .reveal { opacity:0; filter:blur(6px);
-    transition:opacity .75s ease,filter .75s ease,
-               background-color .2s var(--ease-ui),scale .389s var(--spring); }
-.js .reveal.in { opacity:1; filter:blur(0); }
-
-@keyframes fadeInBlur { to { opacity:1; filter:blur(0); } }
-.w { display:inline-block; }
-.pre .w { opacity:0; filter:blur(6px); }
-.pre.lit .w { animation:fadeInBlur .75s ease both; animation-delay:calc(var(--i) * 45ms); }
-
-@media (max-width:900px) {
-    .page { padding:var(--s5) var(--s4) var(--s8); }
-    section { margin-top:var(--s8); }
-    .hero { margin-top:var(--s7); gap:var(--s5); }
-    .tkstats { grid-template-columns:repeat(2,1fr); gap:var(--s6) var(--s4); }
-}
-
-@media (prefers-reduced-motion:reduce) {
-    *,*::before,*::after { animation:none !important; transition:none !important; }
-    .js .reveal { opacity:1 !important; filter:none !important; }
-    .pre .w { opacity:1 !important; filter:none !important; animation:none !important; }
-    .work:active,.links a:active { scale:1 !important; }
+@media (max-width:640px) {
+    .stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .stat:nth-child(3n+1) { padding-left:20px; }
+    .stat:nth-child(2n+1) { padding-left:0; }
+    .agent { grid-template-columns:minmax(0,1fr) auto; gap:8px 16px; }
+    .agent .bar { grid-column:1 / -1; grid-row:2; }
+    /* 窄屏上立方体占满中间，批注挪到右上角，箭头朝左下指回去 */
+    .note { left:auto; right:18px; top:46px; font-size:19px; }
 }
 </style>
 </head>
 <body>
-<div class="page">
-
-<header class="top">
-    <a href="mailto:su@sakuramu.edu.kg">su@sakuramu.edu.kg<i class="caret"></i></a>
-    <nav>
-        <a href="https://about.sakuramu.edu.kg">关于我</a>
-        <a href="https://github.com/fengfe1125" target="_blank" rel="noopener">GitHub</a>
-    </nav>
+<header class="top" id="top">
+    <div class="wrap">
+        <a class="brand" href="/"><svg class="mark" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="head" pathLength="1" d="M12 20 13 10l6.5 5.2Q24 14 28.5 15.2L35 10l1 10c2.5 4 3 9 1 13-2.5 5.5-7.5 8-13 8s-10.5-2.5-13-8c-2-4-1.5-9 1-13Z"/><g class="fish"><path pathLength="1" d="M17.2 6.8c3.2-3.6 9-3.6 11.8.2-2.8 3.8-8.6 3.8-11.8-.2ZM29 7l4-2.6-.8 2.8.8 2.8Z"/><circle cx="20.2" cy="6.6" r=".9" fill="currentColor" stroke="none"/></g><path class="face" pathLength="1" d="M22.4 30.4 24 31.8l1.6-1.4M24 31.8v1c0 1.5-1 2.4-2.5 2.4M24 32.8c0 1.5 1 2.4 2.5 2.4M15 30l-8.5-1.5M15 32.2l-8.2 1.7M33 30l8.5-1.5M33 32.2l8.2 1.7"/><circle class="eye" cx="18.8" cy="26.4" r="1.5" fill="currentColor" stroke="none"/><circle class="eye" cx="29.2" cy="26.4" r="1.5" fill="currentColor" stroke="none"/></svg>沐枫</a>
+        <nav class="nav" aria-label="主导航">
+            <a href="#works">作品</a>
+            <a href="#tokens">用量</a>
+            <a href="https://about.sakuramu.edu.kg">关于</a>
+            <a href="https://github.com/fengfe1125" target="_blank" rel="noopener">GitHub ↗</a>
+        </nav>
+    </div>
 </header>
 
-<div class="hero">
-    <img src="/avatar.jpg" alt="沐枫的头像" loading="eager">
-    <div class="who">
-        <h1>沐枫</h1>
-        <div class="handle">@fengfe1125 · Rowan</div>
-        <p class="lede"><em>Dare to think.</em></p>
-        <div class="status" id="status"><span class="e"></span><span class="m"></span></div>
-    </div>
-</div>
-
-<canvas id="fx" aria-hidden="true"></canvas>
-
-<section class="col">
-    <div class="label reveal">Works <span class="n"></span><span class="zh">作品</span></div>
-    <!-- 项目由脚本插入到这里之前 -->
-    <div id="works-end" hidden></div>
-</section>
-
-<section>
-    <div class="label reveal">Tokens <span class="zh">用量</span></div>
-    <div class="tkstats reveal" id="tk-stats"></div>
-
-    <div class="reveal">
-        <div class="tkhead">
-            <div class="vh">Token 活动</div>
-            <div class="tkviews" id="tk-views" role="tablist" aria-label="热力图视图">
-                <button type="button" role="tab" data-view="daily" aria-selected="true">每日</button>
-                <button type="button" role="tab" data-view="weekly" aria-selected="false">每周</button>
-                <button type="button" role="tab" data-view="cumul" aria-selected="false">累计</button>
+<main class="wrap">
+    <section class="hero" aria-label="简介">
+        <h1 class="name" aria-label="Rowan"><span style="--i:0">R</span><span style="--i:1">o</span><span style="--i:2">w</span><span style="--i:3">a</span><span style="--i:4">n</span></h1>
+        <div class="hero-aside">
+            <p class="who">沐枫 · @fengfe1125</p>
+            <p class="motto hand-en">Dare to think.<svg class="swoosh" viewBox="0 0 200 18" aria-hidden="true"><path pathLength="1" d="M3 12C42 5 92 3 132 8s52 6 64-2"/></svg></p>
+            <p class="pill status" id="status" hidden><span class="e"></span><span class="m"></span></p>
+            <div class="actions">
+                <a class="btn btn-solid" href="mailto:su@sakuramu.edu.kg">写信给我</a>
+                <a class="btn btn-line" href="https://github.com/fengfe1125" target="_blank" rel="noopener">GitHub ↗</a>
             </div>
         </div>
-        <div class="tkscroll" id="tk-scroll">
-            <div class="tkgrid" id="tk-grid" role="img"></div>
-            <div class="tkmonths" id="tk-months" aria-hidden="true"></div>
+    </section>
+
+    <div class="stage" aria-hidden="true">
+        <canvas id="fx"></canvas>
+        <div class="cap cap-t"><span>fig. 1</span><span>4D → 2D</span></div>
+        <div class="cap cap-b"><span>四维超立方体的投影</span><span>16 个顶点 · 32 条棱</span></div>
+        <div class="note hand-zh"><span class="note-text"><span class="for-mouse">拿鼠标拨它一下</span><span class="for-touch">它在四维里转</span></span><svg class="note-arrow" viewBox="0 0 60 44"><path pathLength="1" d="M56 4C40 6 22 16 10 34"/><path pathLength="1" d="M8 22 10 35 22 31"/></svg></div>
+    </div>
+
+    <section class="sec" id="works" aria-labelledby="works-title">
+        <div class="sec-head reveal">
+            <p class="sec-no">01 · Works</p>
+            <h2 class="sec-title" id="works-title">作品</h2>
+            <p class="scribble hand-zh">最近在折腾的</p>
+            <p class="sec-desc">最近更新的四个项目。全部 <span id="works-total">9</span> 个都在 <a class="u" href="https://github.com/fengfe1125" target="_blank" rel="noopener">GitHub</a> 上。</p>
         </div>
-        <div class="tkfoot"><span id="tk-range"></span><span class="tkscale" id="tk-scale"></span></div>
-        <div class="tkcap" id="tk-cap"></div>
-    </div>
+        <div class="sec-body">
+            <div class="cards" id="works-grid"></div>
+        </div>
+    </section>
 
-    <div class="reveal">
-        <div class="vh" style="margin-top:var(--s8)">按 Agent 分布</div>
-        <div class="tkagents" id="tk-agents" style="margin-top:var(--s4)"></div>
-    </div>
+    <section class="sec" id="tokens" aria-labelledby="tokens-title">
+        <div class="sec-head reveal">
+            <p class="sec-no">02 · Tokens</p>
+            <h2 class="sec-title" id="tokens-title">用量</h2>
+            <p class="scribble hand-zh">天天都在烧 token</p>
+            <p class="sec-desc">我用 AI 编程工具消耗的 Token，由 <a class="u" href="https://github.com/fengfe1125/tokentracker" target="_blank" rel="noopener">TokenTracker</a> 在我电脑上统计后发布。</p>
+        </div>
+        <div class="sec-body">
+            <div class="stats reveal" id="tk-stats"></div>
+            <p class="tk-asof" id="tk-asof"></p>
 
-</section>
+            <div class="block reveal">
+                <div class="block-head">
+                    <h3 class="block-title">每天用了多少</h3>
+                    <div class="seg" id="tk-views" role="tablist" aria-label="热力图视图">
+                        <button type="button" role="tab" data-view="daily" aria-selected="true">每日</button>
+                        <button type="button" role="tab" data-view="weekly" aria-selected="false">每周</button>
+                        <button type="button" role="tab" data-view="cumul" aria-selected="false">累计</button>
+                    </div>
+                </div>
+                <div class="tkscroll" id="tk-scroll">
+                    <div class="tkgrid" id="tk-grid" role="img"></div>
+                    <div class="tkmonths" id="tk-months" aria-hidden="true"></div>
+                </div>
+                <div class="tkfoot"><span id="tk-range"></span><span class="tkscale" id="tk-scale"></span></div>
+                <p class="tkcap" id="tk-cap"></p>
+            </div>
 
-<div class="tip" id="tk-tip" role="status" aria-live="off"></div>
+            <div class="block reveal">
+                <div class="block-head"><h3 class="block-title">按工具分</h3></div>
+                <div class="agents" id="tk-agents"></div>
+                <ul class="tknotes" id="tk-notes"></ul>
+            </div>
+        </div>
+    </section>
+</main>
 
-<section class="col">
-    <div class="label reveal">Elsewhere <span class="zh">别处</span></div>
-    <div class="links reveal">
-        <a href="https://github.com/fengfe1125" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-            <span class="t">GitHub</span><span class="h">@fengfe1125</span></a>
-        <a href="https://x.com/Answerudp" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>
-            <span class="t">X</span><span class="h">@Answerudp</span></a>
-        <a href="https://t.me/+u6L-BJNTza4xYThl" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-            <span class="t">Telegram</span><span class="h">群组</span></a>
-        <a href="https://space.bilibili.com/329868551" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.813 4.653h.854c1.51.054 2.769.578 3.773 1.574 1.004.995 1.524 2.249 1.56 3.76v7.36c-.036 1.51-.556 2.769-1.56 3.773s-2.262 1.524-3.773 1.56H5.333c-1.51-.036-2.769-.556-3.773-1.56S.036 18.858 0 17.347v-7.36c.036-1.511.556-2.765 1.56-3.76 1.004-.996 2.262-1.52 3.773-1.574h.774l-1.174-1.12a1.234 1.234 0 0 1-.373-.906c0-.356.124-.658.373-.907l.027-.027c.267-.249.573-.373.92-.373.347 0 .653.124.92.373L9.653 4.44c.071.071.134.142.187.213h4.267a.836.836 0 0 1 .16-.213l2.853-2.747c.267-.249.573-.373.92-.373.347 0 .662.151.929.4.267.249.391.551.391.907 0 .355-.124.657-.373.906zM5.333 7.24c-.746.018-1.373.276-1.88.773-.506.498-.769 1.13-.786 1.894v7.52c.017.764.28 1.395.786 1.893.507.498 1.134.756 1.88.773h13.334c.746-.017 1.373-.275 1.88-.773.506-.498.769-1.129.786-1.893v-7.52c-.017-.765-.28-1.396-.786-1.894-.507-.497-1.134-.755-1.88-.773zM8 11.107c.373 0 .684.124.933.373.25.249.383.569.4.96v1.173c-.017.391-.15.711-.4.96-.249.25-.56.374-.933.374s-.684-.125-.933-.374c-.25-.249-.383-.569-.4-.96V12.44c0-.373.129-.689.386-.947.258-.257.574-.386.947-.386zm8 0c.373 0 .684.124.933.373.25.249.383.569.4.96v1.173c-.017.391-.15.711-.4.96-.249.25-.56.374-.933.374s-.684-.125-.933-.374c-.25-.249-.383-.569-.4-.96V12.44c.017-.391.15-.711.4-.96.249-.249.56-.373.933-.373Z"/></svg>
-            <span class="t">Bilibili</span><span class="h">329868551</span></a>
-    </div>
-</section>
-
-<footer class="foot reveal">
-    <div class="fl">
-        <span class="k">Get in touch</span>
-        <a href="mailto:su@sakuramu.edu.kg">su@sakuramu.edu.kg</a>
+<footer class="foot">
+    <div class="wrap">
+        <div class="foot-grid">
+            <div class="foot-brand">
+                <svg class="mark" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="head" pathLength="1" d="M12 20 13 10l6.5 5.2Q24 14 28.5 15.2L35 10l1 10c2.5 4 3 9 1 13-2.5 5.5-7.5 8-13 8s-10.5-2.5-13-8c-2-4-1.5-9 1-13Z"/><g class="fish"><path pathLength="1" d="M17.2 6.8c3.2-3.6 9-3.6 11.8.2-2.8 3.8-8.6 3.8-11.8-.2ZM29 7l4-2.6-.8 2.8.8 2.8Z"/><circle cx="20.2" cy="6.6" r=".9" fill="currentColor" stroke="none"/></g><path class="face" pathLength="1" d="M22.4 30.4 24 31.8l1.6-1.4M24 31.8v1c0 1.5-1 2.4-2.5 2.4M24 32.8c0 1.5 1 2.4 2.5 2.4M15 30l-8.5-1.5M15 32.2l-8.2 1.7M33 30l8.5-1.5M33 32.2l8.2 1.7"/><circle class="eye" cx="18.8" cy="26.4" r="1.5" fill="currentColor" stroke="none"/><circle class="eye" cx="29.2" cy="26.4" r="1.5" fill="currentColor" stroke="none"/></svg>
+                <p class="foot-sign"><span class="hand-zh">沐枫</span><span class="hand-en">Rowan</span></p>
+                <p class="foot-motto">Dare to think.</p>
+            </div>
+            <nav class="foot-col" aria-label="站点">
+                <h2>站点</h2>
+                <ul>
+                    <li><a href="/">首页</a></li>
+                    <li><a href="#works">作品</a></li>
+                    <li><a href="#tokens">用量</a></li>
+                    <li><a href="https://about.sakuramu.edu.kg">关于</a></li>
+                    <li><a href="https://about.sakuramu.edu.kg/#notes">手记</a></li>
+                </ul>
+            </nav>
+            <nav class="foot-col" aria-label="别处">
+                <h2>别处</h2>
+                <ul>
+                    <li><a href="https://github.com/fengfe1125" target="_blank" rel="noopener">GitHub</a></li>
+                    <li><a href="https://x.com/Answerudp" target="_blank" rel="noopener">X</a></li>
+                    <li><a href="https://t.me/+u6L-BJNTza4xYThl" target="_blank" rel="noopener">Telegram</a></li>
+                    <li><a href="https://space.bilibili.com/329868551" target="_blank" rel="noopener">Bilibili</a></li>
+                </ul>
+            </nav>
+            <div class="foot-col">
+                <h2>联系</h2>
+                <ul>
+                    <li><a href="mailto:su@sakuramu.edu.kg">su@sakuramu.edu.kg</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="foot-base">
+            <span>© 2026 沐枫 Rowan</span>
+            <a href="#top">回到顶部 ↑</a>
+        </div>
     </div>
 </footer>
 
-</div>
+<div class="tip" id="tk-tip" role="status" aria-live="off"></div>
+
 <script>
 (function () {
     'use strict';
     var still = matchMedia('(prefers-reduced-motion: reduce)').matches;
     var PROJECTS = [
-        {
-            "n": "devdisk",
-            "t": "DevDisk",
-            "d": "外置开发盘的状态面板与安全弹出工具。gradle daemon、adb、Xcode 会长期持有盘上的文件句柄，直接推出会截断缓存写入、事后变成莫名其妙的构建失败。它查清占用并按正确顺序弹出。",
-            "g": [
-                "macOS",
-                "SwiftUI",
-                "菜单栏"
-            ],
-            "l": "Swift",
-            "s": 0,
-            "p": "2026-09-12T10:57:16Z"
-        },
         {
             "n": "tokentracker",
             "t": "TokenTracker",
@@ -367,7 +576,20 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
             ],
             "l": "Swift",
             "s": 1,
-            "p": "2026-09-12T09:17:42Z"
+            "p": "2026-09-24T07:55:00Z"
+        },
+        {
+            "n": "devdisk",
+            "t": "DevDisk",
+            "d": "外置开发盘的状态面板与安全弹出工具。gradle daemon、adb、Xcode 会长期持有盘上的文件句柄，直接推出会截断缓存写入、事后变成莫名其妙的构建失败。它查清占用并按正确顺序弹出。",
+            "g": [
+                "macOS",
+                "SwiftUI",
+                "菜单栏"
+            ],
+            "l": "Swift",
+            "s": 0,
+            "p": "2026-09-24T02:29:50Z"
         },
         {
             "n": "portdeck",
@@ -468,118 +690,48 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
         });
     }
 
-    /* ── 项目砖：直接插进主网格，成为平铺的一部分 ── */
-    var anchor = document.getElementById('works-end');
-    /* 只展示最近更新的几个。语言分布与近 12 个月两块砖仍吃全量，
-       它们本来就是聚合视图，少了反而失真。 */
+    /* ── 作品：描边卡片，只放最近更新的四个 ──
+       全部仓库数照样显示在区块说明里，完整列表交给 GitHub。 */
     var WORKS_SHOWN = 4;
 
+    function kv(k, v) { return '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>'; }
+
     function renderWorks(all) {
-        document.querySelectorAll('.work').forEach(function (n) { n.remove(); });
         var list = all.slice().sort(function (a, b) {
             return +new Date(b.p) - +new Date(a.p);
         }).slice(0, WORKS_SHOWN);
-        var html = list.map(function (r, i) {
-            var c = COLORS[r.l] || 'var(--ink-faint)';
-            return '<a class="work reveal" href="https://github.com/fengfe1125/' + esc(r.n) + '" target="_blank" rel="noopener">'
-                 + '<div class="wtop"><span class="wname">' + esc(r.t || r.n) + '</span>'
-                 +   '<span class="wmeta">'
-                 +     (r.l ? '<span><i class="sq" style="background:' + c + '"></i>' + esc(r.l) + '</span>' : '')
-                 +     (r.s > 0 ? '<span>★ ' + r.s + '</span>' : '')
-                 +     '<span>' + String(r.p).slice(0, 10) + '</span>'
-                 +     '<span class="go">↗</span>'
-                 +   '</span></div>'
-                 + '<div class="wdesc">' + esc(r.d) + '</div>'
-                 + (r.g && r.g.length ? '<div class="tags">' + r.g.map(function (t) { return '<b>' + esc(t) + '</b>'; }).join('') + '</div>' : '')
+        document.getElementById('works-grid').innerHTML = list.map(function (r) {
+            var c = COLORS[r.l] || 'var(--ink-3)';
+            var rows = (r.l ? kv('语言', '<i class="sq" style="background:' + c + '"></i>' + esc(r.l)) : '')
+                     + kv('更新', esc(String(r.p).slice(0, 10)))
+                     + (r.g && r.g.length ? kv('标签', r.g.map(function (t) { return esc(t); }).join(' · ')) : '');
+            return '<a class="card reveal" href="https://github.com/fengfe1125/' + esc(r.n) + '" target="_blank" rel="noopener">'
+                 +   '<div class="card-top"><h3 class="card-name">' + esc(r.t || r.n) + '</h3>'
+                 +     '<span class="card-meta">'
+                 +       (r.s > 0 ? '<span class="card-star" title="GitHub 星标">★ ' + esc(r.s) + '</span>' : '')
+                 +       '<span class="card-go" aria-hidden="true">↗</span></span></div>'
+                 +   '<p class="card-desc">' + esc(r.d) + '</p>'
+                 +   '<dl class="kv">' + rows + '</dl>'
                  + '</a>';
         }).join('');
-        anchor.insertAdjacentHTML('beforebegin', html);
-        var n = document.querySelector('.label .n');
-        if (n) n.textContent = all.length > list.length
-            ? list.length + ' / ' + all.length + ' 个'
-            : list.length + ' 个';
+        document.getElementById('works-total').textContent = all.length;
     }
-
-
 
     function renderAll(l) { renderWorks(l); observe(); }
 
-    /* 逐词揭示：把文本拆成 <span class="w">，用 --i 做 45ms 交错。
-       同原站：只动 blur 与透明度，不做位移。 */
-    function splitWords(el) {
-        if (!el || el.dataset.split) return;
-        // 先按空格切，再把含 CJK 的片段拆成单字 ——
-        // 中文没有词间空格，只按空格切会让"沐枫"变成一个整体，交错就没了。
-        var units = [];
-        el.textContent.trim().split(/\s+/).forEach(function (token, ti) {
-            if (/[\u4e00-\u9fff\u3040-\u30ff]/.test(token)) {
-                token.split('').forEach(function (ch) { units.push([ch, false]); });
-            } else {
-                units.push([token, true]);   // 拉丁词整体保留，后面补空格
-            }
-            if (ti >= 0) { /* 占位，空格在下面按需补 */ }
-        });
-        el.textContent = '';
-        units.forEach(function (u, i) {
-            var span = document.createElement('span');
-            span.className = 'w';
-            span.style.setProperty('--i', i);
-            span.textContent = u[0];
-            el.appendChild(span);
-            if (u[1]) el.appendChild(document.createTextNode(' '));
-        });
-        el.dataset.split = '1';
-    }
-
-    (function heroReveal() {
-        var targets = [document.querySelector('h1'), document.querySelector('.lede em')]
-            .filter(Boolean);
-        targets.forEach(splitWords);
-        // 减少动效偏好、或标签页在后台（rAF 与动画都会被挂起）时不播动画：
-        // 不加 .pre，文字保持原样可见。
-        if (still || document.hidden) return;
-        targets.forEach(function (el) { el.classList.add('pre'); });
-        requestAnimationFrame(function () {
-            targets.forEach(function (el) { el.classList.add('lit'); });
-        });
-    })();
-
-    /* ── 状态气泡：编辑 /status.json 即可 ── */
+    /* ── 状态：编辑 /status.json 即可 ── */
     fetch('/status.json', { cache:'no-cache' })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (s) {
             if (!s || !s.message) return;
             var el = document.getElementById('status');
-            el.querySelector('.e').textContent = s.emoji || '💬';
+            el.querySelector('.e').textContent = s.emoji || '';
             el.querySelector('.m').textContent = s.message;
-            el.title = s.message; el.classList.add('on');
+            el.hidden = false;
         }).catch(function () {});
 
-    /* ── 动画 ── */
-    function countUp(el) {
-        var t = +el.dataset.count, f = el.dataset.fmt;
-        var finalText = f ? fmtV(t, f) : String(Math.round(t));
-        // 后台或失焦标签页里 requestAnimationFrame 会被暂停。原来的写法会先把
-        // 第 0 帧（也就是 0）写进 DOM 再等 rAF，于是数字永远停在 0 —— 动画没跑成，
-        // 屏幕上留下的却是占位值而不是真实数字。
-        if (still || document.hidden) { el.textContent = finalText; return; }
-        var s = performance.now(), settled = false;
-        function settle() {
-            if (settled) return;
-            settled = true;
-            el.textContent = finalText;
-        }
-        // 兜底：不管 rAF 有没有被节流，最终值一定会在 1.4s 内落地。
-        setTimeout(settle, 1400);
-        (function tick(n) {
-            if (settled) return;
-            var p = Math.min((n - s) / 1100, 1);
-            if (p >= 1) { settle(); return; }
-            el.textContent = f ? fmtV(t * (1 - Math.pow(1 - p, 3)), f)
-                               : Math.round(t * (1 - Math.pow(1 - p, 3)));
-            requestAnimationFrame(tick);
-        })(s);
-    }
+    /* ── 揭示 ── */
+    var tkAnimated = false, tkCounted = false;
     function fill(root) {
         root.querySelectorAll('[data-w]').forEach(function (f, i) {
             setTimeout(function () { f.style.width = f.dataset.w + '%'; }, still ? 0 : i * 60);
@@ -589,16 +741,30 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
         // 后台标签页里渲染是挂起的，过渡会停在起始帧 —— 而揭示的起始帧是
         // opacity:0，整块内容因此不可见。动画不能是内容可见的前提：
         // 这种情况下直接跳到终态，再把 transition 还回去，
-        // 保证之后的 hover / 按压回弹照常有过渡。
-        if (still || document.hidden) {
+        // 保证之后的悬停照常有过渡。
+        var quiet = still || document.hidden;
+        if (quiet) {
             el.style.transition = 'none';
             el.classList.add('in');
             void el.offsetWidth;          // 提交无过渡的终态
-            el.style.transition = '';     // 还回去，后续 hover / 按压照常有过渡
+            el.style.transition = '';
         } else {
             el.classList.add('in');
         }
-        el.querySelectorAll('[data-count]').forEach(countUp);
+        // 热力图的逐列入场跟着这一块一起露出来，而不是在页面加载时
+        // 对着一块还看不见的区域白白播完。
+        var grid = el.querySelector('#tk-grid');
+        if (grid && !tkAnimated && !quiet) {
+            tkAnimated = true;
+            grid.classList.add('anim');
+            setTimeout(function () { grid.classList.remove('anim'); }, 1400);
+        }
+        // 六个数字从 0 滚到实际值，只在第一次露出来时播一次。
+        // 终值早就写在 DOM 里了，不播（后台标签页、减少动效）就是终态。
+        if (el.id === 'tk-stats' && !tkCounted && !quiet) {
+            tkCounted = true;
+            el.querySelectorAll('[data-v]').forEach(countUp);
+        }
         fill(el);
     }
 
@@ -610,9 +776,13 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
         }
         if (!io) {
             io = new IntersectionObserver(function (es) {
+                // 回调来过就说明观察器在工作 —— observe() 时每个目标都会先报一次，
+                // 不管在不在视口里。只看「有没有块露出来」的话，首屏没有揭示块时
+                // 兜底会在 2.5 秒后把整页提前亮完，往下滚就什么动画都看不到了。
+                fired = true;
                 es.forEach(function (e) {
                     if (!e.isIntersecting) return;
-                    fired = true; revealNow(e.target); io.unobserve(e.target);
+                    revealNow(e.target); io.unobserve(e.target);
                 });
             }, { threshold:.1, rootMargin:'0px 0px -30px 0px' });
         }
@@ -622,11 +792,13 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
     /* ── Token 用量 ──
        数据来自本机 TokenTracker 的 export-public 载荷。部署时烧录快照，
        之后由 tt.sakuramu.edu.kg 覆盖；取不到就用快照，与 PROJECTS 同一套路。 */
-    var TOKENS_SNAPSHOT = {"agents":[{"cost_usd":2564.34,"id":"claude","tokens":4469776230},{"cost_usd":501.56,"id":"codex","tokens":2245791914},{"cost_usd":25.42,"id":"dsh","tokens":301377042},{"cost_usd":110.96,"id":"pi","tokens":262922126},{"cost_usd":22.82,"id":"kimi","tokens":178513403},{"cost_usd":24.73,"id":"hermes","tokens":73724259},{"cost_usd":51.97,"id":"opencode","tokens":65830878}],"app_version":"0.2.12","caveats":{"snapshot_only_agents":["hermes","opencode"],"undated_share":0.0509},"daily":{"start":"2025-09-13","tokens":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,647162,2290399,4648044,60806057,9272741,51913668,97393341,21570395,44262139,445326,48482768,438299707,178954267,178160419,414130057,320778331,206105299,261417613,7542815,1384284,109093761,112487214,277107957,96892292,197745142,54788694,115914246,173092782,79033341,140085696,321835446,173869922,162601836,37367788,341649850,294702880,351616774,206491407,194521892,299508404,330011174,82634100,276189589,433634020],"window_tokens":7211381039},"generated_at":"2026-09-12T15:00:00Z","longest_burst":{"agent":"codex","basis":"exact","day":"2026-09-01","gap_minutes":30,"seconds":21832},"peak":{"day":"2026-08-11","tokens":438299707},"range":{"days":365,"from":"2025-09-13","to":"2026-09-12"},"streak":{"as_of":"2026-09-12","current":44,"longest":44},"totals":{"active_days":44,"cost_usd":3301.8,"cost_usd_undated":96.66,"tokens":7597935852,"tokens_dated":7211381039,"tokens_undated":386554813},"tz":"Asia/Shanghai","tz_offset_minutes":480,"v":1};
+    var TOKENS_SNAPSHOT = {"agents":[{"cost_usd":2976.71,"id":"claude","tokens":5312534347},{"cost_usd":1035.01,"id":"codex","tokens":3419577914},{"cost_usd":114.6,"id":"pi","tokens":365735383},{"cost_usd":25.42,"id":"dsh","tokens":301377042},{"cost_usd":22.82,"id":"kimi","tokens":178513403},{"cost_usd":24.73,"id":"hermes","tokens":73724259},{"cost_usd":51.97,"id":"opencode","tokens":65830878}],"app_version":"0.3.4","caveats":{"snapshot_only_agents":["hermes","opencode"],"undated_share":0.0398},"daily":{"start":"2025-09-25","tokens":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,647162,2290399,4648044,60806057,9272741,51913668,97393341,21570395,44262139,445326,48482768,438299707,178954267,178160419,414130057,320778331,206105299,261417613,7542815,1384284,109093761,112487214,277107957,96892292,197745142,54788694,115914246,173092782,79033341,140085696,321835446,173869922,162601836,37367788,341649850,294702880,351616774,206491407,194521892,299508404,330011174,82634100,276189589,433716377,134936153,103946694,100289978,125966117,53625549,11484184,29870842,5594877,430498550,148509124,195282074,779270875],"window_tokens":9330738413},"generated_at":"2026-09-24T12:00:00Z","longest_burst":{"agent":"codex","basis":"exact","day":"2026-09-01","gap_minutes":30,"seconds":21832},"peak":{"day":"2026-09-24","tokens":779270875},"range":{"days":365,"from":"2025-09-25","to":"2026-09-24"},"streak":{"as_of":"2026-09-24","current":56,"longest":56},"totals":{"active_days":56,"cost_usd":4251.26,"cost_usd_undated":96.66,"tokens":9717293226,"tokens_dated":9330738413,"tokens_undated":386554813},"tz":"Asia/Shanghai","tz_offset_minutes":480,"v":1};
     var TK_KEY = 'tt-v1', TK_TTL = 8 * 3600 * 1000;   // 首页 8 小时刷一次即可
     var AGENT_NAME = { claude:'Claude Code', codex:'Codex', kimi:'Kimi Code',
         opencode:'opencode', dsh:'dsh', hermes:'Hermes', pi:'Pi' };
-    var tkData = null, tkView = 'daily', tkAnimated = false;
+    var tkData = null, tkView = 'daily';
+
+    function agentName(id) { return AGENT_NAME[id] || id; }
 
     /* 与 TokenTrackerCore 的 MenuBarFmt.fmtTokens 逐档对齐（亿档触发点是 1e6，不是 1e8） */
     function fmtT(n) {
@@ -649,6 +821,26 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
         if (kind === 'days') return Math.round(v) + ' 天';
         return String(Math.round(v));
     }
+    /* 数字滚动。途中的单位按终值定：否则累计 Token 会先显示 999.9K 再跳成 0.01亿，
+       成本会从 $999.99 跳成 $1.00K。rAF 在后台会被挂起，另设一个定时器保证终值落地。 */
+    function fmtCount(x, final, kind) {
+        if (kind === 'tokens' && final >= 1e6) return (x / 1e8).toFixed(2) + '亿';
+        if (kind === 'usd') return '$' + (final >= 1000 ? (x / 1000).toFixed(2) + 'K' : x.toFixed(2));
+        return fmtV(x, kind);
+    }
+    function countUp(el) {
+        var v = +el.dataset.v, kind = el.dataset.fmt, t0 = performance.now(), done = false;
+        if (!(v > 0)) return;
+        function land() { if (!done) { done = true; el.textContent = fmtV(v, kind); } }
+        setTimeout(land, 1500);
+        (function tick(now) {
+            if (done) return;
+            var p = Math.min((now - t0) / 1100, 1);
+            if (p >= 1) { land(); return; }
+            el.textContent = fmtCount(v * (1 - Math.pow(1 - p, 3)), v, kind);
+            requestAnimationFrame(tick);
+        })(t0);
+    }
     function pad2(n) { return (n < 10 ? '0' : '') + n; }
     function dayParts(iso) { var p = iso.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
     function addDays(iso, n) {
@@ -658,39 +850,61 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
     function weekdayMon(iso) { return (dayParts(iso).getDay() + 6) % 7; }
 
     function tkStat(v, fmt, label) {
-        // 初始文本就是最终值，countUp 只是锦上添花的动画。
-        // 数字展示不能把动画当成显示的前提：动画一旦没跑成
-        // （重渲染后砖已 reveal、后台标签页 rAF 被节流、抛异常），
-        // 留在屏幕上的必须是真实数字，而不是占位的 0。
-        return '<div class="stat"><b data-count="' + v + '" data-fmt="' + fmt + '">' +
-               esc(fmtV(v, fmt)) + '</b><span>' + esc(label) + '</span></div>';
+        // 缺数据写「—」。载荷在没有峰值、没有连续对话时会整个省略那个键 ——
+        // 那是「不知道」，不是「零」，显示成 0 就是在说一件没发生的事。
+        // data-v / data-fmt 给数字滚动用；缺数据的格子不滚，一直是「—」。
+        var b = v == null ? '<b>—</b>'
+              : '<b data-v="' + esc(v) + '" data-fmt="' + fmt + '">' + esc(fmtV(v, fmt)) + '</b>';
+        return '<div class="stat">' + b + '<span>' + esc(label) + '</span></div>';
     }
 
     function renderTokens(d) {
         tkData = d;
-        var t = d.totals, b = d.longest_burst;
+        var t = d.totals, b = d.longest_burst, cv = d.caveats || {};
         document.getElementById('tk-stats').innerHTML =
             tkStat(t.tokens, 'tokens', '累计 Token') +
-            tkStat(d.peak ? d.peak.tokens : 0, 'tokens', '峰值 Token') +
-            tkStat(b ? b.seconds : 0, 'dur', '最长聊天时长') +
+            tkStat(d.peak ? d.peak.tokens : null, 'tokens', '单日峰值') +
+            tkStat(b ? b.seconds : null, 'dur', '最长聊天时长') +
             tkStat(d.streak.current, 'days', '当前连续') +
             tkStat(d.streak.longest, 'days', '最长连续') +
             tkStat(t.cost_usd, 'usd', '估算成本');
 
+        var asof = document.getElementById('tk-asof'), g = new Date(d.generated_at);
+        try {
+            asof.textContent = isNaN(g) ? '' : '数据更新于 ' + g.toLocaleString('zh-CN', {
+                timeZone: d.tz || 'Asia/Shanghai', month: 'long', day: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: false });
+        } catch (e) { asof.textContent = '数据更新于 ' + String(d.generated_at).slice(0, 10); }
+
         var agents = d.agents || [], max = 0, i;
         for (i = 0; i < agents.length; i++) max = Math.max(max, agents[i].tokens);
         document.getElementById('tk-agents').innerHTML = agents.map(function (a) {
-            var pct = max ? Math.round(a.tokens / max * 100) : 0;
-            return '<div class="tkagent"><span class="n">' + esc(AGENT_NAME[a.id] || a.id) +
-                '</span><span class="v">' + fmtT(a.tokens) + '</span>' +
-                '<span class="wbar"><i data-w="' + pct + '"></i></span></div>';
-        }).join('') || '<span class="v">暂无数据</span>';
+            var pct = max ? Math.max(1, Math.round(a.tokens / max * 100)) : 0;
+            return '<div class="agent"><span class="n">' + esc(agentName(a.id)) + '</span>'
+                 + '<span class="bar"><i data-w="' + pct + '"></i></span>'
+                 + '<span class="v">' + esc(fmtT(a.tokens)) + '</span></div>';
+        }).join('') || '<p class="tkcap">暂无数据</p>';
+
+        // 口径说明只用载荷里已有的 caveats，措辞对齐 TokenTracker web/README.md 的「口径」一节
+        var notes = [], so = Array.isArray(cv.snapshot_only_agents) ? cv.snapshot_only_agents : [];
+        if (typeof cv.undated_share === 'number' && cv.undated_share > 0) {
+            var p = Math.round(cv.undated_share * 100);
+            notes.push((p < 1 ? '不到 1%' : '约 ' + p + '%') + ' 的用量找不到具体日期：算进累计，但不进热力图。');
+        }
+        var burst = [];
+        if (b && b.gap_minutes) burst.push('中间停顿不超过 ' + b.gap_minutes + ' 分钟算同一次');
+        if (so.length) burst.push('只统计有精确时间的工具，' + so.map(agentName).join('、') + ' 不计入');
+        if (burst.length) notes.push('最长聊天时长：' + burst.join('；') + '。');
+        notes.push('成本含估算，不是订阅账单。');
+        document.getElementById('tk-notes').innerHTML = notes.map(function (s) {
+            return '<li>' + esc(s) + '</li>';
+        }).join('');
 
         drawMap();
 
-        // observe() 只观察 .reveal:not(.in)，所以砖一旦露出过，后续重渲染
-        // 换上的新节点就再也不会被 revealNow 处理 —— countUp 不跑、进度条不填。
-        // 对已经 reveal 过的砖直接补跑一次。
+        // observe() 只观察 .reveal:not(.in)，所以一块一旦露出过，后续重渲染
+        // 换上的新节点就再也不会被 revealNow 处理 —— 进度条不填。
+        // 对已经露出过的块直接补跑一次。
         ['tk-stats', 'tk-agents'].forEach(function (id) {
             var el = document.getElementById(id);
             var tile = el && el.closest ? el.closest('.reveal') : null;
@@ -772,10 +986,11 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
         grid.style.gridTemplateRows = 'repeat(7,' + cell.toFixed(2) + 'px)';
         grid.style.gridAutoColumns = fits ? 'minmax(0,1fr)' : cell + 'px';
         grid.innerHTML = html;
-        if (!tkAnimated && !still && !document.hidden) {
-            tkAnimated = true;
-            grid.classList.add('anim');
-            setTimeout(function () { grid.classList.remove('anim'); }, 1400);
+        // 窄屏要横向滚动时，先停在最右边：最近的日子在右端，停在左端
+        // 第一眼看到的是一年前的空格子。只摆一次，之后切视图不抢用户滚到的位置。
+        if (!fits && !wrap.dataset.pinned) {
+            wrap.scrollLeft = wrap.scrollWidth;
+            wrap.dataset.pinned = '1';
         }
         grid.setAttribute('aria-label', '从 ' + start + ' 到 ' + d.range.to + ' 的每日 Token 用量，共 ' +
             n + ' 天，累计 ' + fmtT(d.daily.window_tokens));
@@ -794,15 +1009,15 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
         months.innerHTML = mh;
 
         document.getElementById('tk-range').textContent =
-            d.range.from + ' → ' + d.range.to + ' · ' + d.totals.active_days + ' 天活跃';
+            d.range.from + ' → ' + d.range.to + ' · ' + d.totals.active_days + ' 天有记录';
         document.getElementById('tk-scale').innerHTML = tkView === 'cumul'
             ? '0%<i></i><i class="l1"></i><i class="l2"></i><i class="l3"></i>100%'
             : '少<i></i><i class="l1"></i><i class="l2"></i><i class="l3"></i>多';
         document.getElementById('tk-cap').textContent = tkView === 'daily'
-            ? '每格一天，按非零日用量的三分位着色 —— 峰值是地板的数百倍，线性着色会让绝大多数天变成空白。'
+            ? '每格一天，颜色越深用得越多。颜色按有记录的日子分三档：最多的一天是最少一天的几百倍，按比例上色的话，大部分格子会淡得看不见。'
             : tkView === 'weekly'
-            ? '整列同色，一列读作一周的合计；分位在周合计上重算，回答的是「哪几周重」。'
-            : '按累计量占最终总量的比例分四段：0–25% / 25–50% / 50–75% / 75–100%。带越窄说明那段时间涨得越猛。';
+            ? '一列是一周，整列同色，看的是哪几周用得多。三档在每周合计上重新划分。'
+            : '颜色表示累计用量走到了全部的哪一段：0–25%、25–50%、50–75%、75–100%。某段颜色变得越快，那段时间用得越猛。';
     }
 
     /* 悬浮提示：整块网格挂一个监听（371 个格子逐个挂太重），
@@ -873,8 +1088,9 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
     })();
 
     renderAll(PROJECTS);
-    document.querySelectorAll('[data-count]').forEach(countUp);
 
+    // 兜底：IntersectionObserver 的回调一次都没来过（比如整页是在后台标签页里
+    // 打开的，渲染被挂起），2.5 秒后把还藏着的块全部直接显示出来。
     setTimeout(function () {
         if (fired || still) return;
         document.querySelectorAll('.reveal:not(.in)').forEach(revealNow);
@@ -899,8 +1115,7 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
         });
         out.sort(function (a, b) { return new Date(b.p) - new Date(a.p); });
         renderAll(out);
-        document.querySelectorAll('.work').forEach(function (e) { e.classList.add('in'); });
-        fill(document);
+        document.querySelectorAll('.card').forEach(function (e) { e.classList.add('in'); });
     }
     var c = cached();
     if (c) merge(c);
@@ -918,7 +1133,7 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
 </script>
 
 <script>
-/* 四维超立方体（tesseract）线框投影
+/* 四维超立方体（tesseract）线框投影，画在首屏的陶土色插画块里。
    16 个顶点取遍 (±1,±1,±1,±1)，两顶点只差一个坐标符号时相连，共 32 条棱。
    先在 XW / YZ / XY 三个平面上做 4D 旋转，再 4D→3D→2D 两次透视投影，
    按投影深度调节每条棱的透明度，产生"由内向外翻出来"的错觉。 */
@@ -937,29 +1152,23 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
         if (d && (d & (d - 1)) === 0) E.push([a, b]);   // 异或结果是 2 的幂 = 只差一位
     }
 
-    // 跟随主题取色
-    var rgb = [178, 78, 51];
-    function readColor() {
-        var h = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim().replace('#', '');
-        if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
-        var n = parseInt(h, 16);
-        if (!isNaN(n)) rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-    }
-    readColor();
-    var mq = matchMedia('(prefers-color-scheme: dark)');
-    if (mq.addEventListener) mq.addEventListener('change', readColor);
-    else if (mq.addListener) mq.addListener(readColor);
+    // 线色取插画块的 color：陶土底在深浅模式下都不变，线也固定是墨色
+    var rgb = [20, 20, 19];
+    var parts = getComputedStyle(tile).color.match(/\d+(\.\d+)?/g);
+    if (parts && parts.length >= 3) rgb = [+parts[0], +parts[1], +parts[2]];
 
-    var W = 1, H = 1;
+    // tNow 是当前这一帧的时间。起点取 4200 而不是 0：t=0 时正对着看，
+    // 只是两个套着的方框，转开一个角度才像立方体。
+    var W = 1, H = 1, tNow = 4200;
+    // 鼠标拨动的角度：aim 是鼠标想要的，tilt 是每帧往 aim 缓过去的当前值
+    var aimX = 0, aimY = 0, tiltX = 0, tiltY = 0;
     function resize() {
         var dpr = Math.min(window.devicePixelRatio || 1, 2), r = tile.getBoundingClientRect();
         W = Math.max(r.width, 1); H = Math.max(r.height, 1);
         cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        draw(tNow);   // 改尺寸会清空画布，立刻补画当前这一帧
     }
-    resize();
-    if ('ResizeObserver' in window) new ResizeObserver(resize).observe(tile);
-    else addEventListener('resize', resize);
 
     function spin(p, i, j, ang) {
         var c = Math.cos(ang), s = Math.sin(ang), x = p[i], y = p[j];
@@ -976,31 +1185,58 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
             spin(p, 0, 3, t * 0.00045);   // XW
             spin(p, 1, 2, t * 0.00033);   // YZ
             spin(p, 0, 1, t * 0.00018);   // XY
+            spin(p, 0, 2, tiltX);         // 鼠标拨动：XZ / YZ 再转一点，
+            spin(p, 1, 2, tiltY);         // 像是把立方体朝鼠标那边掰过去
             var k  = 1 / (2.6 - p[3]);                       // 4D → 3D
             var k2 = 1 / (2.4 - p[2] * k);                   // 3D → 2D
             return { x: cx + p[0] * k * k2 * S, y: cy + p[1] * k * k2 * S, d: k * k2 };
         });
 
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 1.25;
         E.forEach(function (e) {
             var A = pts[e[0]], B = pts[e[1]];
-            var al = Math.max(0.08, Math.min(0.9, ((A.d + B.d) / 2 - 0.05) * 1.35));
+            var al = Math.max(0.14, Math.min(0.95, ((A.d + B.d) / 2 - 0.05) * 1.35));
             ctx.strokeStyle = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + al.toFixed(3) + ')';
             ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
         });
         pts.forEach(function (p) {
-            var al = Math.max(0.15, Math.min(1, (p.d - 0.05) * 1.6));
+            var al = Math.max(0.2, Math.min(1, (p.d - 0.05) * 1.6));
             ctx.fillStyle = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + al.toFixed(3) + ')';
-            ctx.fillRect(p.x - 1.3, p.y - 1.3, 2.6, 2.6);
+            ctx.beginPath(); ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2); ctx.fill();
         });
     }
 
-    // 开了"减少动态效果"就只画一帧静态图
-    if (still) { draw(0); return; }
+    // 先同步画出一帧静态图。动画不能是画面出现的前提：页面在后台标签页里打开时
+    // rAF 不跑，只等动画的话插画块会是一整块空白的陶土色。
+    resize();
+    if ('ResizeObserver' in window) new ResizeObserver(resize).observe(tile);
+    else addEventListener('resize', resize);
 
-    var raf = null, onScreen = true, t0 = performance.now();
-    function loop(now) { draw(now - t0); raf = requestAnimationFrame(loop); }
-    function play() { if (!raf && onScreen && !document.hidden) raf = requestAnimationFrame(loop); }
+    // 开了"减少动态效果"就停在这一帧
+    if (still) return;
+
+    // 鼠标在插画块上移动时把立方体朝那边掰一点，离开后慢慢回正。
+    // 只认鼠标：触屏上的拖动是在滚页面，不该被这里抢走。
+    tile.addEventListener('pointermove', function (e) {
+        if (e.pointerType !== 'mouse') return;
+        var r = tile.getBoundingClientRect();
+        aimX = ((e.clientX - r.left) / r.width - 0.5) * 1.2;
+        aimY = -((e.clientY - r.top) / r.height - 0.5) * 1.2;
+    });
+    tile.addEventListener('pointerleave', function () { aimX = aimY = 0; });
+
+    var raf = null, onScreen = true, t0 = 0;
+    function loop(now) {
+        tiltX += (aimX - tiltX) * 0.06;
+        tiltY += (aimY - tiltY) * 0.06;
+        tNow = now - t0; draw(tNow); raf = requestAnimationFrame(loop);
+    }
+    // 从停下的那一帧接着转，而不是跳到「从加载到现在」该转到的角度
+    function play() {
+        if (raf || !onScreen || document.hidden) return;
+        t0 = performance.now() - tNow;
+        raf = requestAnimationFrame(loop);
+    }
     function stop() { if (raf) { cancelAnimationFrame(raf); raf = null; } }
 
     // 滚出视口或切到后台就停，不空转耗电
@@ -1013,6 +1249,54 @@ h1 { font-family:'Noto Serif SC',serif; font-weight:400;
     document.addEventListener('visibilitychange', function () { document.hidden ? stop() : play(); });
     play();
 })();
+</script>
+<script>
+/* motion:start */
+/* 两个页面共用的动效。由 scripts/build-shared.mjs 注入两个页面的 motion:start / motion:end 之间。
+ *
+ * 管三件事：
+ *   · 顶栏：离开页首后出现底线；底边一条陶土色细线跟着阅读进度走
+ *   · 首屏入场：<head> 里已经按需加上了 .motion（先把首屏藏好），
+ *     这里等首帧画完再加 .play 开播
+ *   · 区块分隔线：滚到时从左往右画出来；区块和页脚里的手写字跟着一起「写」出来
+ *
+ * 规矩与页面里的揭示动画一致：动画绝不能是内容可见的前提。
+ * 减少动态效果、页面在后台标签页里打开时，<head> 根本不会加 .motion，
+ * 一切直接是终态；<head> 里还有一个 1.5 秒的兜底，这段脚本出了错，首屏也不会一直藏着。
+ */
+(function () {
+    'use strict';
+    var root = document.documentElement;
+
+    var top = document.getElementById('top');
+    function onScroll() {
+        var y = window.scrollY, max = root.scrollHeight - window.innerHeight;
+        top.classList.toggle('stuck', y > 8);
+        top.style.setProperty('--progress', max > 0 ? Math.min(1, y / max).toFixed(4) : '0');
+    }
+    addEventListener('scroll', onScroll, { passive: true });
+    addEventListener('resize', onScroll);
+    onScroll();
+
+    if (!root.classList.contains('motion')) return;
+
+    // 两帧：第一帧把「藏好」的起始状态画出来，第二帧再开播，过渡才有起点
+    requestAnimationFrame(function () {
+        requestAnimationFrame(function () { root.classList.add('play'); });
+    });
+
+    var secs = document.querySelectorAll('.sec, .foot');
+    function draw(el) { el.classList.add('drawn'); }
+    if (!('IntersectionObserver' in window)) { secs.forEach(draw); return; }
+    var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+            if (!e.isIntersecting) return;
+            draw(e.target); io.unobserve(e.target);
+        });
+    }, { rootMargin: '0px 0px -12% 0px' });
+    secs.forEach(function (s) { io.observe(s); });
+})();
+/* motion:end */
 </script>
 <script>
 /* beacon:start */
