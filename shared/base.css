@@ -21,6 +21,11 @@
     --sans:'DM Sans','Noto Sans SC','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
     --serif:'Noto Serif SC','Songti SC','STSong',Georgia,serif;
     --mono:'JetBrains Mono','Noto Sans SC',ui-monospace,SFMono-Regular,Menlo,monospace;
+    /* 手写（见第 10 节）。Google Fonts 连不上时，英文退到系统自带的手写体
+       （macOS 的 Bradley Hand、Windows 的 Segoe Print），中文退到楷体；
+       都没有才是 cursive —— Windows 上那是 Comic Sans。 */
+    --hand:'Caveat','Bradley Hand','Segoe Print',cursive;
+    --hand-zh:'Caveat','Long Cang','Bradley Hand','Segoe Print','Kaiti SC','STKaiti','KaiTi',cursive;
 
     --wrap:1200px; --gutter:clamp(16px,4vw,40px); --head:64px;
     --r-card:12px; --r-tile:16px;
@@ -85,7 +90,7 @@ ul,ol { list-style:none; }
 .nav a:hover,.nav a[aria-current="page"] { color:var(--ink); }
 .nav a:hover::after,.nav a[aria-current="page"]::after { transform:scaleX(1); }
 
-/* ═════ 3. 首屏：左边粗体大字，右栏小字与按钮，底边对齐 ═════ */
+/* ═════ 3. 首屏：左边大字，右栏小字，底边对齐 ═════ */
 .hero { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:24px; row-gap:32px;
     align-items:end; padding:clamp(56px,10vw,136px) 0 clamp(40px,6vw,72px); }
 .hero h1 { grid-column:1 / span 8; font-family:var(--sans); font-weight:700;
@@ -143,20 +148,6 @@ ul,ol { list-style:none; }
 .card-desc { flex:1; margin-top:12px; font-size:16px; line-height:1.8; color:var(--ink-2); }
 .card .kv { margin-top:24px; }
 
-/* 按钮与胶囊 */
-.btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:44px; padding:0 22px;
-    border:1px solid var(--ink); border-radius:999px; white-space:nowrap; text-decoration:none; cursor:pointer;
-    font-family:var(--sans); font-size:15px; font-weight:500;
-    transition:background-color .2s var(--ease-ui),color .2s var(--ease-ui),border-color .2s var(--ease-ui); }
-.btn-solid { background:var(--ink); color:var(--bg); }
-.btn-solid:hover { background:var(--ink-2); border-color:var(--ink-2); }
-.btn-line { background:transparent; color:var(--ink); }
-.btn-line:hover { background:var(--ink); color:var(--bg); }
-.pill { display:inline-flex; align-items:center; gap:8px; padding:5px 14px;
-    border:1px solid var(--line-2); border-radius:999px;
-    font-family:var(--sans); font-size:14px; line-height:1.5; color:var(--ink-2); }
-.pill > :empty { display:none; }
-
 /* ═════ 5. 页脚：多列链接，最底一行版权 ═════ */
 .foot { border-top:1px solid var(--line); }
 .foot-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:24px; row-gap:40px;
@@ -196,7 +187,7 @@ ul,ol { list-style:none; }
 
 /* ═════ 8. 首屏入场与线条绘制 ═════
    .motion 由 <head> 里的小脚本按需加上（减少动态效果、后台标签页时不加），
-   .play 由 shared/motion.js 在首帧画完后加上。没有 .motion 时一切都是终态。 */
+   .play 由 shared/motion.js 在字体到了、首帧画完后加上。没有 .motion 时一切都是终态。 */
 .motion .hero > * { opacity:0; transform:translateY(16px); }
 .motion.play .hero > * { opacity:1; transform:none;
     transition:opacity .9s var(--ease),transform .9s var(--ease); }
@@ -236,12 +227,16 @@ ul,ol { list-style:none; }
 .mark .fish { transform-box:fill-box; transform-origin:40% 60%; }
 .brand:hover .mark .fish { animation:swim .9s ease-in-out infinite; }
 
-/* ═════ 10. 手写体：只做点缀 ═════
-   中文龙藏体（像钢笔随手写的批注），英文 Caveat。正文和标题不用手写，
-   只用在口号、批注、签名这类「顺手写上去」的地方。都走 Google Fonts，
-   中文字体按字切片，页面只下载用到的那几个字所在的分片。 */
-.hand-zh { font-family:'Long Cang','Caveat',cursive; font-weight:400; }
-.hand-en { font-family:'Caveat',cursive; font-weight:600; }
+/* ═════ 10. 手写体 ═════
+   中文龙藏体（像钢笔随手写的批注），英文 Caveat。都走 Google Fonts，
+   中文字体按字切片，页面只下载用到的那几个字所在的分片。
+   首页首屏整块手写（名字、口号、状态、写信，样式在首页里）；除此之外只做点缀，
+   用在批注、签名这类「顺手写上去」的地方，正文和区块标题不用手写。 */
+/* 中文走龙藏体；夹在里面的英文、数字和空格交给排在前面的 Caveat ——
+   龙藏体自带的英文字母又细又小、空格很宽，中英混排的一行会显得散。
+   英文要和 .hand-en 一样粗（600），龙藏体只有 400 一档，关掉合成，免得中文被浏览器硬描粗。 */
+.hand-zh { font-family:var(--hand-zh); font-weight:600; font-synthesis:none; }
+.hand-en { font-family:var(--hand); font-weight:600; }
 /* 区块标题旁的小批注：陶土色，像红笔在稿子边上写的一句话。
    24px 算大字，陶土色在浅底上 3.8:1 够用。 */
 .scribble { display:inline-block; margin-top:10px; font-size:24px; line-height:1.2;

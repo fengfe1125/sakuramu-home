@@ -18,13 +18,17 @@
 
 <script>
 /* 页面一加载就决定播不播动效：减少动态效果、或页面在后台标签页里打开时不播，
-   一切直接是终态。1.5 秒后无论如何加上 .play —— 万一后面哪段脚本出错，
-   首屏也不会一直藏着。正常情况下由 shared/motion.js 在首帧画完后开播。 */
+   一切直接是终态。正常情况下由 shared/motion.js 等字体到了、首帧画完再开播（最多等 1 秒）。
+   这里是兜底：页面脚本都跑完 1.5 秒后无论如何加上 .play，万一哪段脚本出错，首屏也不会一直藏着。
+   从 DOMContentLoaded 起算而不是从现在起算：字体样式表慢的时候，后面的脚本要等它下载完才执行，
+   从现在起算的话，兜底会抢在字体前面开播，名字就先用系统字体写出来了。 */
 (function (d) {
     d.className += ' js';
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || document.hidden) return;
     d.className += ' motion';
-    setTimeout(function () { d.classList.add('play'); }, 1500);
+    document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () { d.classList.add('play'); }, 1500);
+    });
 })(document.documentElement);
 </script>
 
@@ -57,6 +61,11 @@
     --sans:'DM Sans','Noto Sans SC','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
     --serif:'Noto Serif SC','Songti SC','STSong',Georgia,serif;
     --mono:'JetBrains Mono','Noto Sans SC',ui-monospace,SFMono-Regular,Menlo,monospace;
+    /* 手写（见第 10 节）。Google Fonts 连不上时，英文退到系统自带的手写体
+       （macOS 的 Bradley Hand、Windows 的 Segoe Print），中文退到楷体；
+       都没有才是 cursive —— Windows 上那是 Comic Sans。 */
+    --hand:'Caveat','Bradley Hand','Segoe Print',cursive;
+    --hand-zh:'Caveat','Long Cang','Bradley Hand','Segoe Print','Kaiti SC','STKaiti','KaiTi',cursive;
 
     --wrap:1200px; --gutter:clamp(16px,4vw,40px); --head:64px;
     --r-card:12px; --r-tile:16px;
@@ -121,7 +130,7 @@ ul,ol { list-style:none; }
 .nav a:hover,.nav a[aria-current="page"] { color:var(--ink); }
 .nav a:hover::after,.nav a[aria-current="page"]::after { transform:scaleX(1); }
 
-/* ═════ 3. 首屏：左边粗体大字，右栏小字与按钮，底边对齐 ═════ */
+/* ═════ 3. 首屏：左边大字，右栏小字，底边对齐 ═════ */
 .hero { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:24px; row-gap:32px;
     align-items:end; padding:clamp(56px,10vw,136px) 0 clamp(40px,6vw,72px); }
 .hero h1 { grid-column:1 / span 8; font-family:var(--sans); font-weight:700;
@@ -179,20 +188,6 @@ ul,ol { list-style:none; }
 .card-desc { flex:1; margin-top:12px; font-size:16px; line-height:1.8; color:var(--ink-2); }
 .card .kv { margin-top:24px; }
 
-/* 按钮与胶囊 */
-.btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:44px; padding:0 22px;
-    border:1px solid var(--ink); border-radius:999px; white-space:nowrap; text-decoration:none; cursor:pointer;
-    font-family:var(--sans); font-size:15px; font-weight:500;
-    transition:background-color .2s var(--ease-ui),color .2s var(--ease-ui),border-color .2s var(--ease-ui); }
-.btn-solid { background:var(--ink); color:var(--bg); }
-.btn-solid:hover { background:var(--ink-2); border-color:var(--ink-2); }
-.btn-line { background:transparent; color:var(--ink); }
-.btn-line:hover { background:var(--ink); color:var(--bg); }
-.pill { display:inline-flex; align-items:center; gap:8px; padding:5px 14px;
-    border:1px solid var(--line-2); border-radius:999px;
-    font-family:var(--sans); font-size:14px; line-height:1.5; color:var(--ink-2); }
-.pill > :empty { display:none; }
-
 /* ═════ 5. 页脚：多列链接，最底一行版权 ═════ */
 .foot { border-top:1px solid var(--line); }
 .foot-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:24px; row-gap:40px;
@@ -232,7 +227,7 @@ ul,ol { list-style:none; }
 
 /* ═════ 8. 首屏入场与线条绘制 ═════
    .motion 由 <head> 里的小脚本按需加上（减少动态效果、后台标签页时不加），
-   .play 由 shared/motion.js 在首帧画完后加上。没有 .motion 时一切都是终态。 */
+   .play 由 shared/motion.js 在字体到了、首帧画完后加上。没有 .motion 时一切都是终态。 */
 .motion .hero > * { opacity:0; transform:translateY(16px); }
 .motion.play .hero > * { opacity:1; transform:none;
     transition:opacity .9s var(--ease),transform .9s var(--ease); }
@@ -272,12 +267,16 @@ ul,ol { list-style:none; }
 .mark .fish { transform-box:fill-box; transform-origin:40% 60%; }
 .brand:hover .mark .fish { animation:swim .9s ease-in-out infinite; }
 
-/* ═════ 10. 手写体：只做点缀 ═════
-   中文龙藏体（像钢笔随手写的批注），英文 Caveat。正文和标题不用手写，
-   只用在口号、批注、签名这类「顺手写上去」的地方。都走 Google Fonts，
-   中文字体按字切片，页面只下载用到的那几个字所在的分片。 */
-.hand-zh { font-family:'Long Cang','Caveat',cursive; font-weight:400; }
-.hand-en { font-family:'Caveat',cursive; font-weight:600; }
+/* ═════ 10. 手写体 ═════
+   中文龙藏体（像钢笔随手写的批注），英文 Caveat。都走 Google Fonts，
+   中文字体按字切片，页面只下载用到的那几个字所在的分片。
+   首页首屏整块手写（名字、口号、状态、写信，样式在首页里）；除此之外只做点缀，
+   用在批注、签名这类「顺手写上去」的地方，正文和区块标题不用手写。 */
+/* 中文走龙藏体；夹在里面的英文、数字和空格交给排在前面的 Caveat ——
+   龙藏体自带的英文字母又细又小、空格很宽，中英混排的一行会显得散。
+   英文要和 .hand-en 一样粗（600），龙藏体只有 400 一档，关掉合成，免得中文被浏览器硬描粗。 */
+.hand-zh { font-family:var(--hand-zh); font-weight:600; font-synthesis:none; }
+.hand-en { font-family:var(--hand); font-weight:600; }
 /* 区块标题旁的小批注：陶土色，像红笔在稿子边上写的一句话。
    24px 算大字，陶土色在浅底上 3.8:1 够用。 */
 .scribble { display:inline-block; margin-top:10px; font-size:24px; line-height:1.2;
@@ -304,21 +303,38 @@ ul,ol { list-style:none; }
 /* base:end */
 
 /* ═════ 首页专属 ═════ */
-/* 首屏的名字：大号粗体，逐字浮起（入场的 .motion / .play 见共用样式第 8 节） */
-.hero .name { font-size:clamp(76px,13vw,184px); line-height:.92; letter-spacing:-.045em; }
-.name span { display:inline-block; }
-.motion .hero > .name { opacity:1; transform:none; }
-.motion .name span { opacity:0; transform:translateY(.3em); }
-.motion.play .name span { opacity:1; transform:none;
-    transition:opacity .8s var(--ease) calc(var(--i) * 70ms),transform 1s var(--ease) calc(var(--i) * 70ms); }
+/* 首屏整块手写：名字、口号、状态、写信，没有别的字。
+   名字用 Caveat 粗体，入场时从左往右「写」出来（.motion / .play 见共用样式第 8 节）。
+   justify-self:start 让标题只有字那么宽，裁切扫过去的速度才是写字的速度；
+   手写体的笔画常伸出字框，裁切框四边都往外放。 */
+.hero .name { justify-self:start; font-family:var(--hand); font-weight:700;
+    font-size:clamp(120px,19vw,260px); line-height:.8; letter-spacing:-.01em; }
+.motion .hero > .name { opacity:1; transform:none; clip-path:inset(-50% 100% -50% -6%); }
+.motion.play .hero > .name { clip-path:inset(-50% -8% -50% -6%);
+    transition:clip-path 1.4s cubic-bezier(.5,.1,.3,1) .05s; }
+/* 右栏等名字写到一半再浮上来 */
+.motion.play .hero > .hero-aside { transition-delay:.5s; }
 
-/* 口号：手写，底下一道手绘的陶土色弧线，入场后自己画出来 */
-.motto { position:relative; display:inline-block; margin-top:8px; font-size:36px; line-height:1.15;
+/* 口号：底下一道手绘的陶土色弧线，入场后自己画出来 */
+.motto { position:relative; display:inline-block; font-size:40px; line-height:1.15;
     transform:rotate(-3deg); transform-origin:left bottom; }
 .swoosh { position:absolute; left:-4px; bottom:-10px; width:calc(100% + 12px); height:auto; overflow:visible;
     fill:none; stroke:var(--clay); stroke-width:3; stroke-linecap:round; }
-.motion .swoosh path { stroke-dasharray:1 2; animation:stroke-in .9s var(--ease) 1.1s backwards; }
-.status { margin-top:20px; }
+.motion.play .swoosh path { stroke-dasharray:1 2; animation:stroke-in .9s var(--ease) 1.3s backwards; }
+/* 状态：内容来自 /status.json，改那个文件就行 */
+.status { margin-top:26px; font-size:22px; line-height:1.4; color:var(--ink-3); text-wrap:balance; }
+.status > :empty { display:none; }
+.status .e { margin-right:.3em; }
+/* 写信：手写一句，后面一支手画的箭头；指上去时箭头往前走一步 */
+.hero .actions { margin-top:14px; }
+.mail { display:inline-flex; align-items:center; gap:10px; font-size:28px; line-height:1.3;
+    color:var(--ink); text-decoration:none; transition:color .2s var(--ease-ui); }
+.mail:hover { color:var(--clay-text); }
+.mail-arrow { width:40px; height:20px; overflow:visible; fill:none; stroke:var(--clay); stroke-width:2;
+    stroke-linecap:round; stroke-linejoin:round; transition:translate .3s var(--ease); }
+.mail:hover .mail-arrow { translate:6px 0; }
+.motion.play .mail-arrow path { stroke-dasharray:1 2; animation:stroke-in .5s var(--ease) 1.8s backwards; }
+.motion.play .mail-arrow path + path { animation-delay:2.2s; }
 
 /* 插画块：陶土底上的墨色细线。深浅模式下是同一块陶土，线也固定用墨色，
    所以这里写死颜色而不是用令牌 —— 画布脚本读的就是这里的 color。 */
@@ -326,14 +342,10 @@ ul,ol { list-style:none; }
     margin-bottom:clamp(56px,8vw,96px);
     border-radius:var(--r-tile); background:#D97757; color:#141413; }
 .stage canvas { position:absolute; inset:0; width:100%; height:100%; }
-.cap { position:absolute; left:20px; right:20px; display:flex; justify-content:space-between; gap:16px;
-    font-family:var(--mono); font-size:12px; line-height:1.4; letter-spacing:.04em; pointer-events:none; }
-.cap-t { top:16px; }
-.cap-b { bottom:16px; }
-/* 入场：跟在首屏两块后面浮现（.motion / .play 的说明见共用样式第 8 节） */
+/* 入场：名字写到一半时跟着右栏浮上来（.motion / .play 的说明见共用样式第 8 节） */
 .motion .stage { opacity:0; transform:translateY(16px); }
 .motion.play .stage { opacity:1; transform:none;
-    transition:opacity 1s var(--ease) .24s,transform 1s var(--ease) .24s; }
+    transition:opacity 1s var(--ease) .6s,transform 1s var(--ease) .6s; }
 /* 鼠标能拨动立方体（见下面的画布脚本），光标换成十字准星提示一下 */
 @media (hover:hover) and (pointer:fine) { .stage { cursor:crosshair; } }
 
@@ -347,9 +359,9 @@ ul,ol { list-style:none; }
 @media (hover:none),(pointer:coarse) { .for-mouse { display:none; } .for-touch { display:inline; } }
 /* 入场：插画块浮上来之后，字从左往右写出来，再画箭头 */
 @keyframes write-on { from { clip-path:inset(-50% 100% -50% -4%); } to { clip-path:inset(-50% -10% -50% -4%); } }
-.motion .note-text { animation:write-on 1.1s var(--ease) 1.3s backwards; }
-.motion .note-arrow path { stroke-dasharray:1 2; animation:stroke-in .7s var(--ease) 2.2s backwards; }
-.motion .note-arrow path + path { animation-delay:2.7s; }
+.motion.play .note-text { animation:write-on 1.1s var(--ease) 1.5s backwards; }
+.motion.play .note-arrow path { stroke-dasharray:1 2; animation:stroke-in .7s var(--ease) 2.4s backwards; }
+.motion.play .note-arrow path + path { animation-delay:2.9s; }
 
 /* ═════ 用量 ═════ */
 /* 六个数字：格子之间一根发丝线，外圈只留上下两根。
@@ -449,22 +461,18 @@ ul,ol { list-style:none; }
 
 <main class="wrap">
     <section class="hero" aria-label="简介">
-        <h1 class="name" aria-label="Rowan"><span style="--i:0">R</span><span style="--i:1">o</span><span style="--i:2">w</span><span style="--i:3">a</span><span style="--i:4">n</span></h1>
+        <h1 class="name">Rowan</h1>
         <div class="hero-aside">
-            <p class="who">沐枫 · @fengfe1125</p>
             <p class="motto hand-en">Dare to think.<svg class="swoosh" viewBox="0 0 200 18" aria-hidden="true"><path pathLength="1" d="M3 12C42 5 92 3 132 8s52 6 64-2"/></svg></p>
-            <p class="pill status" id="status" hidden><span class="e"></span><span class="m"></span></p>
+            <p class="status hand-zh" id="status" hidden><span class="e"></span><span class="m"></span></p>
             <div class="actions">
-                <a class="btn btn-solid" href="mailto:su@sakuramu.edu.kg">写信给我</a>
-                <a class="btn btn-line" href="https://github.com/fengfe1125" target="_blank" rel="noopener">GitHub ↗</a>
+                <a class="mail hand-zh" href="mailto:su@sakuramu.edu.kg">写信给我<svg class="mail-arrow" viewBox="0 0 40 20" aria-hidden="true"><path pathLength="1" d="M3 12c9-3 19-4 31-2"/><path pathLength="1" d="M27 4.5l7.5 5.5-6.5 6"/></svg></a>
             </div>
         </div>
     </section>
 
     <div class="stage" aria-hidden="true">
         <canvas id="fx"></canvas>
-        <div class="cap cap-t"><span>fig. 1</span><span>4D → 2D</span></div>
-        <div class="cap cap-b"><span>四维超立方体的投影</span><span>16 个顶点 · 32 条棱</span></div>
         <div class="note hand-zh"><span class="note-text"><span class="for-mouse">拿鼠标拨它一下</span><span class="for-touch">它在四维里转</span></span><svg class="note-arrow" viewBox="0 0 60 44"><path pathLength="1" d="M56 4C40 6 22 16 10 34"/><path pathLength="1" d="M8 22 10 35 22 31"/></svg></div>
     </div>
 
@@ -566,6 +574,19 @@ ul,ol { list-style:none; }
     var still = matchMedia('(prefers-reduced-motion: reduce)').matches;
     var PROJECTS = [
         {
+            "n": "devdisk",
+            "t": "DevDisk",
+            "d": "外置开发盘的状态面板与安全弹出工具。gradle daemon、adb、Xcode 会长期持有盘上的文件句柄，直接推出会截断缓存写入、事后变成莫名其妙的构建失败。它查清占用并按正确顺序弹出。",
+            "g": [
+                "macOS",
+                "SwiftUI",
+                "菜单栏"
+            ],
+            "l": "Swift",
+            "s": 0,
+            "p": "2026-09-24T13:22:16Z"
+        },
+        {
             "n": "tokentracker",
             "t": "TokenTracker",
             "d": "macOS 状态栏常驻，统计本机 Claude Code、Codex、Kimi Code、opencode 等七个 AI 编程工具的 Token 用量与成本。用量日志只在本机读取和保存，不上传。",
@@ -577,19 +598,6 @@ ul,ol { list-style:none; }
             "l": "Swift",
             "s": 1,
             "p": "2026-09-24T07:55:00Z"
-        },
-        {
-            "n": "devdisk",
-            "t": "DevDisk",
-            "d": "外置开发盘的状态面板与安全弹出工具。gradle daemon、adb、Xcode 会长期持有盘上的文件句柄，直接推出会截断缓存写入、事后变成莫名其妙的构建失败。它查清占用并按正确顺序弹出。",
-            "g": [
-                "macOS",
-                "SwiftUI",
-                "菜单栏"
-            ],
-            "l": "Swift",
-            "s": 0,
-            "p": "2026-09-24T02:29:50Z"
         },
         {
             "n": "portdeck",
@@ -792,7 +800,7 @@ ul,ol { list-style:none; }
     /* ── Token 用量 ──
        数据来自本机 TokenTracker 的 export-public 载荷。部署时烧录快照，
        之后由 tt.sakuramu.edu.kg 覆盖；取不到就用快照，与 PROJECTS 同一套路。 */
-    var TOKENS_SNAPSHOT = {"agents":[{"cost_usd":2976.71,"id":"claude","tokens":5312534347},{"cost_usd":1035.01,"id":"codex","tokens":3419577914},{"cost_usd":114.6,"id":"pi","tokens":365735383},{"cost_usd":25.42,"id":"dsh","tokens":301377042},{"cost_usd":22.82,"id":"kimi","tokens":178513403},{"cost_usd":24.73,"id":"hermes","tokens":73724259},{"cost_usd":51.97,"id":"opencode","tokens":65830878}],"app_version":"0.3.4","caveats":{"snapshot_only_agents":["hermes","opencode"],"undated_share":0.0398},"daily":{"start":"2025-09-25","tokens":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,647162,2290399,4648044,60806057,9272741,51913668,97393341,21570395,44262139,445326,48482768,438299707,178954267,178160419,414130057,320778331,206105299,261417613,7542815,1384284,109093761,112487214,277107957,96892292,197745142,54788694,115914246,173092782,79033341,140085696,321835446,173869922,162601836,37367788,341649850,294702880,351616774,206491407,194521892,299508404,330011174,82634100,276189589,433716377,134936153,103946694,100289978,125966117,53625549,11484184,29870842,5594877,430498550,148509124,195282074,779270875],"window_tokens":9330738413},"generated_at":"2026-09-24T12:00:00Z","longest_burst":{"agent":"codex","basis":"exact","day":"2026-09-01","gap_minutes":30,"seconds":21832},"peak":{"day":"2026-09-24","tokens":779270875},"range":{"days":365,"from":"2025-09-25","to":"2026-09-24"},"streak":{"as_of":"2026-09-24","current":56,"longest":56},"totals":{"active_days":56,"cost_usd":4251.26,"cost_usd_undated":96.66,"tokens":9717293226,"tokens_dated":9330738413,"tokens_undated":386554813},"tz":"Asia/Shanghai","tz_offset_minutes":480,"v":1};
+    var TOKENS_SNAPSHOT = {"agents":[{"cost_usd":3039.14,"id":"claude","tokens":5450174720},{"cost_usd":1165.31,"id":"codex","tokens":3710219992},{"cost_usd":114.6,"id":"pi","tokens":365735383},{"cost_usd":25.42,"id":"dsh","tokens":301377042},{"cost_usd":22.82,"id":"kimi","tokens":178513403},{"cost_usd":24.73,"id":"hermes","tokens":73724259},{"cost_usd":51.97,"id":"opencode","tokens":65830878}],"app_version":"0.3.4","caveats":{"snapshot_only_agents":["hermes","opencode"],"undated_share":0.0381},"daily":{"start":"2025-09-26","tokens":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,647162,2290399,4648044,60806057,9272741,51913668,97393341,21570395,44262139,445326,48482768,438299707,178954267,178160419,414130057,320778331,206105299,261417613,7542815,1384284,109093761,112487214,277107957,96892292,197745142,54788694,115914246,173092782,79033341,140085696,321835446,173869922,162601836,37367788,341649850,294702880,351616774,206491407,194521892,299508404,330011174,82634100,276189589,433716377,134936153,103946694,100289978,125966117,53625549,11484184,29870842,5594877,430498550,148509124,195282074,1132612841,74940485],"window_tokens":9759020864},"generated_at":"2026-09-25T07:00:00Z","longest_burst":{"agent":"codex","basis":"exact","day":"2026-09-01","gap_minutes":30,"seconds":21832},"peak":{"day":"2026-09-24","tokens":1132612841},"range":{"days":365,"from":"2025-09-26","to":"2026-09-25"},"streak":{"as_of":"2026-09-25","current":57,"longest":57},"totals":{"active_days":57,"cost_usd":4443.99,"cost_usd_undated":96.66,"tokens":10145575677,"tokens_dated":9759020864,"tokens_undated":386554813},"tz":"Asia/Shanghai","tz_offset_minutes":480,"v":1};
     var TK_KEY = 'tt-v1', TK_TTL = 8 * 3600 * 1000;   // 首页 8 小时刷一次即可
     var AGENT_NAME = { claude:'Claude Code', codex:'Codex', kimi:'Kimi Code',
         opencode:'opencode', dsh:'dsh', hermes:'Hermes', pi:'Pi' };
@@ -1257,7 +1265,7 @@ ul,ol { list-style:none; }
  * 管三件事：
  *   · 顶栏：离开页首后出现底线；底边一条陶土色细线跟着阅读进度走
  *   · 首屏入场：<head> 里已经按需加上了 .motion（先把首屏藏好），
- *     这里等首帧画完再加 .play 开播
+ *     这里等字体到了、首帧画完再加 .play 开播
  *   · 区块分隔线：滚到时从左往右画出来；区块和页脚里的手写字跟着一起「写」出来
  *
  * 规矩与页面里的揭示动画一致：动画绝不能是内容可见的前提。
@@ -1281,9 +1289,19 @@ ul,ol { list-style:none; }
     if (!root.classList.contains('motion')) return;
 
     // 两帧：第一帧把「藏好」的起始状态画出来，第二帧再开播，过渡才有起点
-    requestAnimationFrame(function () {
-        requestAnimationFrame(function () { root.classList.add('play'); });
-    });
+    function play() {
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () { root.classList.add('play'); });
+        });
+    }
+    // 首页首屏是手写字，边写边出来。字体没到就开写，会先用系统自带的草书写一半、
+    // 再突然换成手写体，所以等字体到了再开播；最多等 1 秒，<head> 里还有 1.5 秒的兜底。
+    var fonts = document.fonts;
+    if (fonts && fonts.ready) {
+        Promise.race([fonts.ready, new Promise(function (r) { setTimeout(r, 1000); })]).then(play, play);
+    } else {
+        play();
+    }
 
     var secs = document.querySelectorAll('.sec, .foot');
     function draw(el) { el.classList.add('drawn'); }
