@@ -32,9 +32,10 @@
 })(document.documentElement);
 </script>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=JetBrains+Mono:wght@400&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@400;600&family=Caveat:wght@500..700&family=Long+Cang&display=swap" rel="stylesheet">
+<!-- fonts:start -->
+<link rel="preload" href="/fonts/caveat/v23/Wnz6HAc5bAfYB2Q7ZjYYiAzcPA.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/fonts/fonts.css?v=9ef81f6f77">
+<!-- fonts:end -->
 
 <style>
 /* base:start */
@@ -61,7 +62,7 @@
     --sans:'DM Sans','Noto Sans SC','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
     --serif:'Noto Serif SC','Songti SC','STSong',Georgia,serif;
     --mono:'JetBrains Mono','Noto Sans SC',ui-monospace,SFMono-Regular,Menlo,monospace;
-    /* 手写（见第 10 节）。Google Fonts 连不上时，英文退到系统自带的手写体
+    /* 手写（见第 10 节）。字体文件没加载出来时，英文退到系统自带的手写体
        （macOS 的 Bradley Hand、Windows 的 Segoe Print），中文退到楷体；
        都没有才是 cursive —— Windows 上那是 Comic Sans。 */
     --hand:'Caveat','Bradley Hand','Segoe Print',cursive;
@@ -268,8 +269,8 @@ ul,ol { list-style:none; }
 .brand:hover .mark .fish { animation:swim .9s ease-in-out infinite; }
 
 /* ═════ 10. 手写体 ═════
-   中文龙藏体（像钢笔随手写的批注），英文 Caveat。都走 Google Fonts，
-   中文字体按字切片，页面只下载用到的那几个字所在的分片。
+   中文龙藏体（像钢笔随手写的批注），英文 Caveat。字体文件放在主站自己的 /fonts/ 下
+   （scripts/build-fonts.mjs），中文字体按字切片，页面只下载用到的那几个字所在的分片。
    首页首屏整块手写（名字、口号、状态、写信，样式在首页里）；除此之外只做点缀，
    用在批注、签名这类「顺手写上去」的地方，正文和区块标题不用手写。 */
 /* 中文走龙藏体；夹在里面的英文、数字和空格交给排在前面的 Caveat ——
@@ -800,7 +801,7 @@ ul,ol { list-style:none; }
     /* ── Token 用量 ──
        数据来自本机 TokenTracker 的 export-public 载荷。部署时烧录快照，
        之后由 tt.sakuramu.edu.kg 覆盖；取不到就用快照，与 PROJECTS 同一套路。 */
-    var TOKENS_SNAPSHOT = {"agents":[{"cost_usd":3039.14,"id":"claude","tokens":5450174720},{"cost_usd":1165.31,"id":"codex","tokens":3710219992},{"cost_usd":114.6,"id":"pi","tokens":365735383},{"cost_usd":25.42,"id":"dsh","tokens":301377042},{"cost_usd":22.82,"id":"kimi","tokens":178513403},{"cost_usd":24.73,"id":"hermes","tokens":73724259},{"cost_usd":51.97,"id":"opencode","tokens":65830878}],"app_version":"0.3.4","caveats":{"snapshot_only_agents":["hermes","opencode"],"undated_share":0.0381},"daily":{"start":"2025-09-26","tokens":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,647162,2290399,4648044,60806057,9272741,51913668,97393341,21570395,44262139,445326,48482768,438299707,178954267,178160419,414130057,320778331,206105299,261417613,7542815,1384284,109093761,112487214,277107957,96892292,197745142,54788694,115914246,173092782,79033341,140085696,321835446,173869922,162601836,37367788,341649850,294702880,351616774,206491407,194521892,299508404,330011174,82634100,276189589,433716377,134936153,103946694,100289978,125966117,53625549,11484184,29870842,5594877,430498550,148509124,195282074,1132612841,74940485],"window_tokens":9759020864},"generated_at":"2026-09-25T07:00:00Z","longest_burst":{"agent":"codex","basis":"exact","day":"2026-09-01","gap_minutes":30,"seconds":21832},"peak":{"day":"2026-09-24","tokens":1132612841},"range":{"days":365,"from":"2025-09-26","to":"2026-09-25"},"streak":{"as_of":"2026-09-25","current":57,"longest":57},"totals":{"active_days":57,"cost_usd":4443.99,"cost_usd_undated":96.66,"tokens":10145575677,"tokens_dated":9759020864,"tokens_undated":386554813},"tz":"Asia/Shanghai","tz_offset_minutes":480,"v":1};
+    var TOKENS_SNAPSHOT = {"agents":[{"cost_usd":3050.97,"id":"claude","tokens":5475902333},{"cost_usd":1165.31,"id":"codex","tokens":3710219992},{"cost_usd":114.6,"id":"pi","tokens":365735383},{"cost_usd":25.42,"id":"dsh","tokens":301377042},{"cost_usd":22.82,"id":"kimi","tokens":178513403},{"cost_usd":24.73,"id":"hermes","tokens":73724259},{"cost_usd":51.97,"id":"opencode","tokens":65830878}],"app_version":"0.3.4","caveats":{"snapshot_only_agents":["hermes","opencode"],"undated_share":0.038},"daily":{"start":"2025-09-26","tokens":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,647162,2290399,4648044,60806057,9272741,51913668,97393341,21570395,44262139,445326,48482768,438299707,178954267,178160419,414130057,320778331,206105299,261417613,7542815,1384284,109093761,112487214,277107957,96892292,197745142,54788694,115914246,173092782,79033341,140085696,321835446,173869922,162601836,37367788,341649850,294702880,351616774,206491407,194521892,299508404,330011174,82634100,276189589,433716377,134936153,103946694,100289978,125966117,53625549,11484184,29870842,5594877,430498550,148509124,195282074,1132612841,100668098],"window_tokens":9784748477},"generated_at":"2026-09-25T08:00:00Z","longest_burst":{"agent":"codex","basis":"exact","day":"2026-09-01","gap_minutes":30,"seconds":21832},"peak":{"day":"2026-09-24","tokens":1132612841},"range":{"days":365,"from":"2025-09-26","to":"2026-09-25"},"streak":{"as_of":"2026-09-25","current":57,"longest":57},"totals":{"active_days":57,"cost_usd":4455.82,"cost_usd_undated":96.66,"tokens":10171303290,"tokens_dated":9784748477,"tokens_undated":386554813},"tz":"Asia/Shanghai","tz_offset_minutes":480,"v":1};
     var TK_KEY = 'tt-v1', TK_TTL = 8 * 3600 * 1000;   // 首页 8 小时刷一次即可
     var AGENT_NAME = { claude:'Claude Code', codex:'Codex', kimi:'Kimi Code',
         opencode:'opencode', dsh:'dsh', hermes:'Hermes', pi:'Pi' };

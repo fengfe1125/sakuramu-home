@@ -3,17 +3,18 @@
   "private": true,
   "scripts": {
     "dev": "wrangler dev",
-    "test": "node tests/test_notes.js && node tests/test_access.js && node tests/test_monitor.js && node tests/test_notify.js && node tests/test_noteapi.js && node tests/test_hits.js && node tests/test_placeholders.js",
+    "test": "node tests/test_notes.js && node tests/test_access.js && node tests/test_monitor.js && node tests/test_notify.js && node tests/test_noteapi.js && node tests/test_hits.js && node tests/test_placeholders.js && node tests/test_fonts.js",
     "snapshot": "node scripts/refresh-snapshot.mjs",
     "notes": "node scripts/build-notes.mjs",
-    "deploy": "npm run shared && npm run snapshot && node scripts/check-placeholders.mjs public/index.html && wrangler deploy",
-    "deploy:about": "npm run shared && npm run notes && node scripts/check-placeholders.mjs v2/index.html && wrangler deploy --config wrangler.v2.jsonc",
+    "deploy": "npm run shared && npm run snapshot && node scripts/check-placeholders.mjs public/index.html && node scripts/build-fonts.mjs --check && wrangler deploy",
+    "deploy:about": "npm run shared && npm run notes && node scripts/check-placeholders.mjs v2/index.html && node scripts/build-fonts.mjs --check && wrangler deploy --config wrangler.v2.jsonc",
     "versions": "wrangler versions list",
     "deploy:admin": "wrangler deploy --config wrangler.admin.jsonc",
     "admin:schema": "wrangler d1 execute sakuramu-admin --remote --config wrangler.admin.jsonc --file=./admin/src/schema.sql",
     "admin:tail": "wrangler tail sakuramu-admin --config wrangler.admin.jsonc --format pretty",
     "deploy:notes": "wrangler deploy --config wrangler.notes.jsonc",
     "shared": "node scripts/build-shared.mjs",
+    "fonts": "node scripts/build-fonts.mjs",
     "deploy:hits": "wrangler deploy --config wrangler.hits.jsonc"
   },
   "devDependencies": {

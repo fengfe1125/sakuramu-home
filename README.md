@@ -25,6 +25,7 @@ npm run dev            # 本地预览主站 http://localhost:8787
 npm run snapshot       # 只刷新烧录的快照，不部署
 npm run notes          # 只渲染手记，不部署
 npm run shared         # 只注入共用片段（样式 + 埋点），不部署
+npm run fonts          # 从 Google 拉字体到 public/fonts/（换字体时才用，见「字体」）
 npm run deploy         # 刷新快照 + 部署主站
 npm run deploy:about   # 渲染手记 + 部署关于页
 npm run deploy:admin   # 部署后台
@@ -332,12 +333,12 @@ UPDATE 停留时长  两列都没索引                 = 1
 结构全靠 1px 发丝线，不用阴影和渐变。陶土色在浅底上对比度只有 3:1，
 只给色块、线条和大字用，小字一律用 `--ink-3`。深色模式跟随系统。
 
-手写体：中文龙藏体（Long Cang），英文 Caveat，都走 Google Fonts。
+手写体：中文龙藏体（Long Cang），英文 Caveat。
 首页首屏只有四样东西，全是手写：名字 Rowan、口号「Dare to think.」、状态、「写信给我」。
 别处只做点缀：插画块上的批注、区块标题旁的一句小话、页脚签名；正文和区块标题不用手写。
 中文里夹的英文和数字也交给 Caveat（龙藏体自带的英文字母细、空格宽，混排显得散）。
-中文字体按字切片，页面只下载用到的那几个字所在的分片。
-Google Fonts 连不上时，英文退到系统自带的手写体（Bradley Hand / Segoe Print），中文退到楷体。
+字体文件没加载出来时，英文退到系统自带的手写体（Bradley Hand / Segoe Print），中文退到楷体。
+字体文件从哪来见下面「字体」一节。
 
 ### 动效
 
@@ -369,6 +370,46 @@ Google Fonts 连不上时，英文退到系统自带的手写体（Bradley Hand 
 
 CI 里 `build-shared --check` 会盯着：改了源文件却忘了跑 `npm run shared` 就红。
 
+## 字体
+
+字体文件放在主站自己的 `public/fonts/` 下，不再引用 Google Fonts。
+大陆网络连 fonts.googleapis.com 很不稳定，而字体样式表会阻塞渲染 ——
+连不上时整页都出不来，连得慢时首屏的手写字也迟迟写不出来。
+
+| 字体 | 用在哪 | 字重 |
+|---|---|---|
+| DM Sans | 英文标题、导航、数字 | 400–700 |
+| Noto Sans SC | 中文标题、导航 | 400 / 500 / 700 |
+| Noto Serif SC | 正文 | 400 / 600 |
+| JetBrains Mono | 编号、小标签 | 400 |
+| Caveat | 手写的英文 | 500–700 |
+| 龙藏体 Long Cang | 手写的中文 | 400 |
+
+文件原样来自 Google Fonts，渲染效果不变 —— 改之前逐像素对比过整页截图，一个像素都没差。
+中文字体和 Google 一样按字切成一百来片，每片声明 `unicode-range`，
+浏览器只下载页面上用到的字所在的那几片。仓库里存着全部 306 个文件（14 MB），访客只下其中几片。
+首页还给首屏名字用的那片 Caveat 发了 `<link rel="preload">`，和样式表同时开始下载。
+
+和 Google 原版只有一处不同：黑体 400/500/700、宋体 400/600 在 Google 那边共用同一套可变字体文件，
+每档各写一遍声明；这里合并成一条范围声明，浏览器要解析的样式表从 661 KB 减到 288 KB
+（压缩传输时两者都只有 20 KB 上下，重复的部分本来就被压掉了）。
+页面只用上表这几档字重，合并前后渲染完全一样。**要加一档夹在中间的字重（比如黑体 600）先想清楚**：
+原版会退到最近的一档（700），合并后会真的渲染出 600。
+
+关于页在另一个子域名上，直接引用主站的 `/fonts/`，所以**要先发主站**。
+`public/_headers` 给 `/fonts/*` 开了 CORS（字体按跨域规则取）和一年的强缓存：
+文件地址带版本号，样式表地址带内容指纹（`?v=`），内容一变地址就变。
+`edu.kg` 在公共后缀列表里，两个子域名算同一个站点，浏览器缓存共用 —— 从主页点到关于页不用再下一遍。
+
+| 命令 | 做什么 |
+|---|---|
+| `npm run fonts` | 从 Google 拉最新的样式表和字体，清掉不再用的旧文件，改好两个页面的引用（要能访问 Google） |
+| `node scripts/build-fonts.mjs --check` | 离线自检：样式表引用的文件都在、没有多余文件、许可证齐全、两个页面的引用对得上、CSP 放行。CI 和两个 deploy 命令都会跑 |
+
+要换字体，改 `scripts/build-fonts.mjs` 顶部的 `QUERY`，再 `npm run fonts`。
+这些字体都是 SIL Open Font License，允许自托管和再分发；许可证放在各字体目录下的 `OFL.txt`。
+后台 `admin/ui/` 还在用 Google Fonts —— 只有自己用，没搬。
+
 ## 占位与发版闸
 
 页面里还没写好的地方用 `data-todo` 属性标出来，本地预览时会有一圈陶土色虚线框。
@@ -387,6 +428,7 @@ CSP 里留着 `'unsafe-inline'` 是没办法的事：页面的样式和脚本全
 而脚本内容每次刷快照都会变，用 hash 会天天失效。即便如此这条策略仍然有价值 ——
 它挡住的是「注入一个外部脚本」和「把数据 POST 到任意域名」，
 那才是静态站最现实的两种攻击面。`connect-src` 按每个页面实际用到的来源写，多一个都不给。
+字体自己发：主站的 `style-src` / `font-src` 只放行 `'self'`，关于页放行 `sakuramu.edu.kg`（见「字体」）。
 
 > 第一版 CSP 把 Cloudflare Web Analytics 的 beacon 挡掉了 ——
 > 它是 Cloudflare 在边缘自动注入的，不在 HTML 源码里，所以看源码发现不了。
@@ -530,6 +572,7 @@ public/index.html   主页（唯一页面，CSS 与 JS 全部内联）
 public/avatar.jpg   头像
 public/status.json  首屏的状态（手写一行），直接编辑即可生效
 public/favicon.svg  站标：顶着鱼的猫，墨线画在陶土底上（v2/ 里放着同一份）
+public/fonts/       自托管的字体（build-fonts 生成，两个页面共用；关于页跨域引用）
 v2/index.html       关于页（手记渲染进这里）
 v2/notes/*.md       手记原稿
 admin/src/          后台 Worker（路由、鉴权、探测、告警、手记校验、建表）

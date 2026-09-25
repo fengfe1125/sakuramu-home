@@ -21,7 +21,7 @@
     --sans:'DM Sans','Noto Sans SC','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
     --serif:'Noto Serif SC','Songti SC','STSong',Georgia,serif;
     --mono:'JetBrains Mono','Noto Sans SC',ui-monospace,SFMono-Regular,Menlo,monospace;
-    /* 手写（见第 10 节）。Google Fonts 连不上时，英文退到系统自带的手写体
+    /* 手写（见第 10 节）。字体文件没加载出来时，英文退到系统自带的手写体
        （macOS 的 Bradley Hand、Windows 的 Segoe Print），中文退到楷体；
        都没有才是 cursive —— Windows 上那是 Comic Sans。 */
     --hand:'Caveat','Bradley Hand','Segoe Print',cursive;
@@ -228,8 +228,8 @@ ul,ol { list-style:none; }
 .brand:hover .mark .fish { animation:swim .9s ease-in-out infinite; }
 
 /* ═════ 10. 手写体 ═════
-   中文龙藏体（像钢笔随手写的批注），英文 Caveat。都走 Google Fonts，
-   中文字体按字切片，页面只下载用到的那几个字所在的分片。
+   中文龙藏体（像钢笔随手写的批注），英文 Caveat。字体文件放在主站自己的 /fonts/ 下
+   （scripts/build-fonts.mjs），中文字体按字切片，页面只下载用到的那几个字所在的分片。
    首页首屏整块手写（名字、口号、状态、写信，样式在首页里）；除此之外只做点缀，
    用在批注、签名这类「顺手写上去」的地方，正文和区块标题不用手写。 */
 /* 中文走龙藏体；夹在里面的英文、数字和空格交给排在前面的 Caveat ——

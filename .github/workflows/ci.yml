@@ -23,6 +23,7 @@ jobs:
           node --check scripts/build-shared.mjs
           node --check scripts/refresh-snapshot.mjs
           node --check scripts/check-placeholders.mjs
+          node --check scripts/build-fonts.mjs
           node --check admin/src/index.mjs
           node --check admin/src/access.mjs
           node --check admin/src/monitor.mjs
@@ -38,6 +39,7 @@ jobs:
           node --check tests/test_noteapi.js
           node --check tests/test_hits.js
           node --check tests/test_placeholders.js
+          node --check tests/test_fonts.js
 
       - name: 渲染器回归
         run: node tests/test_notes.js
@@ -73,6 +75,13 @@ jobs:
       # 第一版把共用样式里的一行注释当成了占位，连主站都发不出去。
       - name: 发版闸回归
         run: node tests/test_placeholders.js
+
+      # 字体从主站自己的 /fonts/ 发（大陆连 Google Fonts 很不稳定）。
+      # 漏认一片字、样式表引用的文件不在、页面指纹和样式表对不上、CSP 没放行 ——
+      # 这几种坏法页面都照样打开，只是某些字悄悄变回系统字体，肉眼很难发现。
+      # 这一步同时跑了仓库里真实产物的 --check。
+      - name: 字体自托管回归
+        run: node tests/test_fonts.js
 
       # 后台在公网上，而 Access 只挡自定义域这一条路。
       # workers.dev 和版本预览 URL 是两个不同的主机名，都绕过 Access ——
